@@ -18,8 +18,9 @@ import NaoEncontrado from './pages/NaoEncontrado.jsx';
 export default function App() {
   return (
     <>
+      <a className="btn btn-light saltar-conteudo" href="#conteudo">Saltar para o conteúdo</a>
       <Navbar />
-      <main className="container-xl py-4">
+      <main id="conteudo" className="container-xl py-4" tabIndex="-1">
         <Routes>
           {/* Visitante */}
           <Route path="/" element={<Catalogo />} />

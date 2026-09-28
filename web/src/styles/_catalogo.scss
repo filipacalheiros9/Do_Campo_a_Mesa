@@ -1,28 +1,72 @@
 .grelha-produtos {
   display: grid;
   gap: 1rem;
-  grid-template-columns: 1fr;                 // telemóvel
-  @include a-partir-de(md) { grid-template-columns: repeat(2, 1fr); }
-  @include a-partir-de(lg) { grid-template-columns: repeat(3, 1fr); }
-  @include a-partir-de(xl) { grid-template-columns: repeat(4, 1fr); }
+  grid-template-columns: repeat(2, minmax(0, 1fr)); // telemóvel
+
+  @include a-partir-de(md) {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1.25rem;
+  }
+
+  @include a-partir-de(lg) { gap: 1.5rem; }
+  @include a-partir-de(xl) { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 }
 
 .cartao-produto {
   border-color: $linha;
   overflow: hidden;
 
-  &__imagem { height: 160px; background: rgba($verde, .12); }
+  &__imagem {
+    display: grid;
+    height: 8rem;
+    place-items: center;
+
+    span {
+      @include serif;
+      font-size: 2rem;
+    }
+  }
+
+  &__foto {
+    width: 100%;
+    height: 8rem;
+    object-fit: cover;
+  }
+
   .preco { color: $verde; font-weight: 700; font-size: 1.15rem; }
-  .etiqueta-bio {
+  .etiqueta {
     align-self: flex-start;
     font-size: .7rem; font-weight: 700;
     padding: .15rem .5rem; margin-bottom: .5rem;
     border-radius: .35rem;
     background: rgba($verde, .12); color: $verde-escuro;
+
+    &--esgotado {
+      background: rgba($terracota, .12);
+      color: $terracota;
+    }
+  }
+}
+
+$cores-categoria: (
+  horticolas: (#CFE3CA, #335F2F),
+  fruta: (#DCE6C3, #4E6B22),
+  mel: (#F3DDA3, #86590C),
+  vinho: (#E6D3DE, #6E3353),
+  queijo: (#F1E6C4, #7F6420),
+  padaria: (#EADBC0, #7A5427),
+  outros: (#E2CDB9, #6B4123)
+);
+
+@each $nome, $cores in $cores-categoria {
+  .cat-#{$nome} {
+    background: nth($cores, 1);
+    color: nth($cores, 2);
   }
 }
 
 .filtros {
   display: flex; flex-direction: column; gap: .75rem;
+  @include a-partir-de(md) { gap: 1rem; }
   @include a-partir-de(lg) { flex-direction: row; align-items: center; }
 }

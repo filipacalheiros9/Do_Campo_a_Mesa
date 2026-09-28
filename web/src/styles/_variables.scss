@@ -6,14 +6,23 @@ $fundo: #F6F2EA;
 $tinta: #1F2A1E;
 $texto-secundario: #5A6354;
 $linha: #E3DACA;
+$branco: #FFFFFF;
 
 // Variáveis do Bootstrap
 $primary: $verde;
 $success: $verde;
+$danger: #A3281C;
 $body-bg: $fundo;
 $body-color: $tinta;
+$border-color: $linha;
 $border-radius: .75rem;
-$font-family-sans-serif: system-ui, -apple-system, "Segoe UI", sans-serif;
+$border-radius-sm: .5rem;
+$border-radius-lg: 1rem;
+$card-border-color: $linha;
+$font-family-sans-serif: "Segoe UI", system-ui, -apple-system, Roboto, sans-serif;
+$headings-font-weight: 600;
+$link-color: $verde;
+$link-decoration: none;
 
 // Breakpoints próprios (Mobile First)
 $breakpoints: (md: 768px, lg: 1024px, xl: 1280px);

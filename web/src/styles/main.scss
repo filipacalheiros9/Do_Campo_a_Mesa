@@ -4,13 +4,24 @@
 @import 'mixins';
 @import 'catalogo';
 
-.barra-topo { background: #fff; border-bottom: 1px solid $linha; }
-.marca { font-family: Georgia, serif; font-weight: 700; color: $tinta; }
+.barra-topo { background: $branco; border-bottom: 1px solid $linha; }
+.marca { @include serif; color: $tinta; }
 .texto-secundario { color: $texto-secundario; }
 
+.saltar-conteudo {
+  position: fixed;
+  z-index: 1100;
+  top: .5rem;
+  left: .5rem;
+  transform: translateY(-150%);
+
+  &:focus { transform: translateY(0); }
+}
+
 .destaque h1 {
-  font-family: Georgia, serif;
+  @include serif;
   font-size: 2rem;
+  @include a-partir-de(md) { font-size: 2.5rem; }
   @include a-partir-de(lg) { font-size: 3rem; }
 }
 
@@ -36,4 +47,13 @@
   padding: 1rem 1.25rem;
   background: rgba($terracota, .06);
   margin-bottom: 1rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    scroll-behavior: auto !important;
+    transition-duration: .01ms !important;
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+  }
 }

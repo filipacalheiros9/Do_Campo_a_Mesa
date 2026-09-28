@@ -2,3 +2,14 @@
 @mixin a-partir-de($bp) {
   @media (min-width: map-get($breakpoints, $bp)) { @content; }
 }
+
+@mixin serif {
+  font-family: Georgia, "Times New Roman", serif;
+  font-weight: 600;
+}
+
+@mixin cartao {
+  background: $branco;
+  border: 1px solid $linha;
+  border-radius: $border-radius-lg;
+}
