@@ -4,7 +4,7 @@ import { useCarrinho } from '../context/CarrinhoContext.jsx';
 
 export default function Navbar() {
   const { utilizador, sair } = useAuth();
-  const { linhas } = useCarrinho();
+  const { totalArtigos } = useCarrinho();
 
   return (
     <header className="barra-topo">
@@ -22,7 +22,10 @@ export default function Navbar() {
               <li className="nav-item"><NavLink to="/encomendas" className="nav-link">Encomendas</NavLink></li>
             )}
             {utilizador?.papel === 'produtor' && (
-              <li className="nav-item"><NavLink to="/produtor" className="nav-link">Painel</NavLink></li>
+              <>
+                <li className="nav-item"><NavLink to="/produtor" end className="nav-link">Painel</NavLink></li>
+                <li className="nav-item"><NavLink to="/produtor/produtos" className="nav-link">Produtos</NavLink></li>
+              </>
             )}
             {utilizador?.papel === 'admin' && (
               <li className="nav-item"><NavLink to="/admin" className="nav-link">Administração</NavLink></li>
@@ -30,7 +33,7 @@ export default function Navbar() {
           </ul>
           <div className="d-flex gap-2 align-items-center">
             {utilizador?.papel === 'comprador' && (
-              <Link to="/carrinho" className="btn btn-outline-secondary">Carrinho ({linhas.length})</Link>
+              <Link to="/carrinho" className="btn btn-outline-secondary">Carrinho ({totalArtigos})</Link>
             )}
             {utilizador ? (
               <button type="button" className="btn btn-outline-secondary" onClick={sair}>Sair</button>

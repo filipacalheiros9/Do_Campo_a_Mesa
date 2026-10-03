@@ -94,4 +94,3 @@ components:
             _id: { type: string }
             produtor: { type: string, description: Id do produtor (ou objeto com populate) }
             imagemUrl: { type: string }
-    # TODO: User, Order, Auction, Bid, Review, Erro

@@ -2,6 +2,12 @@ import { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 
+const INICIO = {
+  comprador: '/',
+  produtor: '/produtor',
+  admin: '/admin'
+};
+
 export default function Login() {
   const { entrar } = useAuth();
   const navigate = useNavigate();
@@ -12,8 +18,8 @@ export default function Login() {
   async function submeter(e) {
     e.preventDefault();
     try {
-      await entrar(dados.email, dados.password);
-      navigate(location.state?.de || '/');
+      const utilizador = await entrar(dados.email, dados.password);
+      navigate(location.state?.de || INICIO[utilizador.papel] || '/');
     } catch (err) {
       setErro(err.message);
     }

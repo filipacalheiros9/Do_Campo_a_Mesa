@@ -18,14 +18,32 @@ export default function Catalogo() {
   useEffect(() => {
     if (USAR_DADOS_SIMULADOS) {
       // Semana 2: filtragem local sobre dados simulados
+      const pesquisa = filtro.q.trim().toLowerCase();
+
       setProdutos(produtosSimulados.filter((p) =>
         (filtro.categoria === 'Todos' || p.categoria === filtro.categoria) &&
         (!filtro.bio || p.biologico) &&
-        p.nome.toLowerCase().includes(filtro.q.toLowerCase())));
-      return;
+        p.nome.toLowerCase().includes(pesquisa)));
+      setErro('');
+      return undefined;
     }
-    const q = new URLSearchParams(filtro);
-    api(`/products?${q}`).then(setProdutos).catch((e) => setErro(e.message));
+
+    // Aguarda 300 ms após a última alteração antes de pedir dados à API.
+    const temporizador = setTimeout(() => {
+      const parametros = new URLSearchParams(
+        Object.entries(filtro).filter(([, valor]) =>
+          valor !== '' && valor !== false && valor !== 'Todos'),
+      );
+
+      api(`/products?${parametros}`)
+        .then((dados) => {
+          setProdutos(dados);
+          setErro('');
+        })
+        .catch((e) => setErro(e.message));
+    }, 300);
+
+    return () => clearTimeout(temporizador);
   }, [filtro]);
 
   const mudar = (campo) => (e) =>
@@ -36,7 +54,6 @@ export default function Catalogo() {
       <section className="destaque mb-4">
         <h1>Direto de quem produz, para a sua mesa.</h1>
         <p className="texto-secundario">Produtores do Alto Minho. Encomende ou dispute os lotes da época nos leilões em direto.</p>
-        {/* TODO: cartão com o leilão em direto em destaque */}
       </section>
 
       <section className="filtros mb-3" aria-label="Filtros">
@@ -54,7 +71,6 @@ export default function Catalogo() {
           <input id="bio" className="form-check-input" type="checkbox" checked={filtro.bio} onChange={mudar('bio')} />
           <label className="form-check-label" htmlFor="bio">Só biológico</label>
         </div>
-        {/* TODO: filtros por época, preço máximo e ordenação */}
       </section>
 
       {erro && <div className="alert alert-danger">{erro}</div>}
