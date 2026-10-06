@@ -9,7 +9,11 @@ const errorHandler = require('./middleware/errorHandler');
 const app = express();
 
 app.use(cors({ origin: process.env.CLIENT_URL || '*' }));
-app.use(express.json());
+// Limita o tamanho dos pedidos JSON para evitar corpos excessivamente grandes.
+app.use(express.json({ limit: '1mb' }));
+
+// Em desenvolvimento, as imagens ficam disponíveis a partir de api/uploads/.
+app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')));
 
 // Passo 5: documentação OpenAPI em /api-docs
 const openapi = YAML.load(path.join(__dirname, '..', 'openapi.yaml'));

@@ -1,6 +1,4 @@
-# Passo 5: especificação OpenAPI da API. Validar no Swagger Editor (https://editor.swagger.io).
-# Está documentado apenas o recurso /products como exemplo.
-# TODO: documentar /auth, /producers, /orders, /auctions, /reviews e /admin.
+# Especificação OpenAPI da API REST.
 openapi: 3.0.3
 info:
   title: Do Campo à Mesa API
@@ -9,6 +7,73 @@ info:
 servers:
   - url: http://localhost:3000/api
 paths:
+  /auth/registo:
+    post:
+      tags: [Autenticação]
+      summary: Registar um comprador ou produtor
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [nome, email, password, papel]
+              properties:
+                nome: { type: string }
+                email: { type: string, format: email }
+                password: { type: string, minLength: 8 }
+                papel: { type: string, enum: [comprador, produtor] }
+                produtor: { type: object }
+      responses:
+        '201': { description: Utilizador registado }
+        '400': { description: Dados inválidos }
+        '409': { description: Email já utilizado }
+  /auth/login:
+    post:
+      tags: [Autenticação]
+      summary: Autenticar e obter um JWT
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email: { type: string, format: email }
+                password: { type: string }
+      responses:
+        '200': { description: Token e utilizador autenticado }
+        '400': { description: Credenciais em falta }
+        '401': { description: Credenciais incorretas }
+        '403': { description: Produtor ainda não validado }
+  /auth/eu:
+    get:
+      tags: [Autenticação]
+      summary: Consultar o utilizador autenticado
+      security: [ { bearerAuth: [] } ]
+      responses:
+        '200': { description: Utilizador autenticado }
+        '401': { description: Token em falta ou inválido }
+        '404': { description: Utilizador não encontrado }
+  /producers:
+    get:
+      tags: [Produtores]
+      summary: Listar produtores validados
+      parameters:
+        - { name: localidade, in: query, schema: { type: string } }
+      responses:
+        '200': { description: Lista de produtores }
+  /producers/{id}:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string } }
+    get:
+      tags: [Produtores]
+      summary: Consultar a página pública de um produtor
+      responses:
+        '200': { description: Produtor, produtos e avaliação média }
+        '400': { description: Identificador inválido }
+        '404': { description: Produtor não encontrado }
   /products:
     get:
       tags: [Produtos]
@@ -18,6 +83,9 @@ paths:
         - { name: categoria, in: query, schema: { type: string } }
         - { name: precoMax, in: query, schema: { type: number } }
         - { name: bio, in: query, schema: { type: boolean } }
+        - { name: epoca, in: query, schema: { type: string, enum: [Primavera, Verão, Outono, Inverno] } }
+        - { name: produtor, in: query, description: Identificador do produtor, schema: { type: string } }
+        - { name: ordenar, in: query, schema: { type: string, enum: [recentes, preco_asc, preco_desc, nome], default: recentes } }
       responses:
         '200':
           description: Lista de produtos
@@ -36,7 +104,12 @@ paths:
           application/json:
             schema: { $ref: '#/components/schemas/ProductInput' }
       responses:
-        '201': { description: Produto criado }
+        '201':
+          description: Produto criado
+          headers:
+            Location:
+              description: URL do novo produto
+              schema: { type: string }
         '400': { description: Dados inválidos }
         '401': { description: Token em falta ou inválido }
         '403': { description: Utilizador não é produtor }
@@ -51,7 +124,8 @@ paths:
           description: Produto
           content:
             application/json:
-              schema: { $ref: '#/components/schemas/Product' }
+                schema: { $ref: '#/components/schemas/Product' }
+        '400': { description: Identificador inválido }
         '404': { description: Não encontrado }
     put:
       tags: [Produtos]
@@ -63,14 +137,291 @@ paths:
             schema: { $ref: '#/components/schemas/ProductInput' }
       responses:
         '200': { description: Produto atualizado }
+        '400': { description: Dados ou identificador inválidos }
+        '401': { description: Token em falta ou inválido }
+        '403': { description: Utilizador não é o produtor dono }
         '404': { description: Não encontrado }
+  /products/{id}/imagem:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string } }
+    post:
+      tags: [Produtos]
+      summary: Enviar a imagem de um produto
+      security: [ { bearerAuth: [] } ]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [imagem]
+              properties:
+                imagem: { type: string, format: binary }
+      responses:
+        '200': { description: URL da imagem guardada }
+        '400': { description: Ficheiro inválido }
+        '401': { description: Token em falta ou inválido }
+        '403': { description: Utilizador não é o produtor dono }
+        '404': { description: Produto não encontrado }
     delete:
       tags: [Produtos]
       summary: Remover produto (produtor dono)
       security: [ { bearerAuth: [] } ]
       responses:
         '204': { description: Removido }
+        '400': { description: Identificador inválido }
+        '401': { description: Token em falta ou inválido }
+        '403': { description: Utilizador não é o produtor dono }
         '404': { description: Não encontrado }
+  /orders:
+    get:
+      tags: [Encomendas]
+      summary: Listar as encomendas do utilizador autenticado
+      description: O comprador vê as suas encomendas; o produtor vê as encomendas destinadas a si.
+      security: [ { bearerAuth: [] } ]
+      responses:
+        '200':
+          description: Encomendas ordenadas da mais recente para a mais antiga
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Order' }
+        '401': { description: Token em falta ou inválido }
+        '403': { description: Papel sem acesso a esta consulta }
+    post:
+      tags: [Encomendas]
+      summary: Criar uma encomenda e reservar stock
+      security: [ { bearerAuth: [] } ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/OrderInput' }
+      responses:
+        '201':
+          description: Encomenda criada
+          headers:
+            Location:
+              description: URL da nova encomenda
+              schema: { type: string }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Order' }
+        '400': { description: Linhas ou dados de entrega inválidos }
+        '401': { description: Token em falta ou inválido }
+        '403': { description: Utilizador não é comprador }
+        '404': { description: Produto não encontrado }
+        '409': { description: Stock insuficiente }
+  /orders/{id}/estado:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string } }
+    patch:
+      tags: [Encomendas]
+      summary: Avançar o estado de uma encomenda
+      description: "Sequência permitida: pendente → confirmada → pronta → entregue."
+      security: [ { bearerAuth: [] } ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [estado]
+              properties:
+                estado: { type: string, enum: [confirmada, pronta, entregue] }
+      responses:
+        '200':
+          description: Estado atualizado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Order' }
+        '400': { description: Identificador ou estado inválido }
+        '401': { description: Token em falta ou inválido }
+        '403': { description: Utilizador não é o produtor destinatário }
+        '404': { description: Encomenda não encontrada }
+        '409': { description: Transição de estado inválida ou concorrente }
+  /orders/{id}:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string } }
+    get:
+      tags: [Encomendas]
+      summary: Consultar o detalhe de uma encomenda
+      security: [ { bearerAuth: [] } ]
+      responses:
+        '200': { description: Detalhe da encomenda }
+        '400': { description: Identificador inválido }
+        '401': { description: Token em falta ou inválido }
+        '403': { description: Utilizador sem acesso à encomenda }
+        '404': { description: Encomenda não encontrada }
+  /auctions:
+    get:
+      tags: [Leilões]
+      summary: Listar leilões
+      parameters:
+        - { name: estado, in: query, schema: { type: string, enum: [agendado, ativo, terminado] } }
+      responses:
+        '200': { description: Lista de leilões }
+        '400': { description: Estado inválido }
+    post:
+      tags: [Leilões]
+      summary: Criar um leilão
+      security: [ { bearerAuth: [] } ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [lote, precoBase, incremento, duracao]
+              properties:
+                produto: { type: string }
+                lote: { type: string }
+                quantidade: { type: string }
+                precoBase: { type: number, minimum: 0 }
+                incremento: { type: number, exclusiveMinimum: 0 }
+                duracao: { type: number, exclusiveMinimum: 0, description: Minutos }
+                iniciaEm: { type: string, format: date-time }
+      responses:
+        '201': { description: Leilão criado }
+        '400': { description: Dados inválidos }
+        '401': { description: Token em falta ou inválido }
+        '403': { description: Produto de outro produtor }
+        '404': { description: Produto não encontrado }
+  /auctions/{id}:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string } }
+    get:
+      tags: [Leilões]
+      summary: Consultar um leilão e as últimas licitações
+      responses:
+        '200': { description: Leilão e licitações }
+        '400': { description: Identificador inválido }
+        '404': { description: Leilão não encontrado }
+  /auctions/{id}/bids:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string } }
+    get:
+      tags: [Leilões]
+      summary: Consultar o histórico de licitações
+      responses:
+        '200': { description: Lista de licitações }
+        '400': { description: Identificador inválido }
+        '404': { description: Leilão não encontrado }
+  /reviews:
+    get:
+      tags: [Avaliações]
+      summary: Listar avaliações visíveis
+      parameters:
+        - { name: produtor, in: query, schema: { type: string } }
+        - { name: produto, in: query, schema: { type: string } }
+      responses:
+        '200': { description: Lista de avaliações }
+    post:
+      tags: [Avaliações]
+      summary: Avaliar uma encomenda entregue
+      security: [ { bearerAuth: [] } ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [encomenda, classificacao]
+              properties:
+                encomenda: { type: string }
+                produto: { type: string }
+                classificacao: { type: integer, minimum: 1, maximum: 5 }
+                comentario: { type: string }
+      responses:
+        '201': { description: Avaliação criada }
+        '400': { description: Dados inválidos }
+        '401': { description: Token em falta ou inválido }
+        '403': { description: Encomenda de outro comprador }
+        '404': { description: Encomenda não encontrada }
+        '409': { description: Encomenda não entregue ou avaliação repetida }
+  /reviews/{id}/denuncia:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string } }
+    post:
+      tags: [Avaliações]
+      summary: Denunciar uma avaliação
+      security: [ { bearerAuth: [] } ]
+      responses:
+        '204': { description: Denúncia registada }
+        '401': { description: Token em falta ou inválido }
+        '404': { description: Avaliação não encontrada }
+  /admin/estatisticas:
+    get:
+      tags: [Administração]
+      summary: Consultar estatísticas globais
+      security: [ { bearerAuth: [] } ]
+      responses:
+        '200': { description: Estatísticas }
+        '401': { description: Token em falta ou inválido }
+        '403': { description: Utilizador não administrador }
+  /admin/produtores/pendentes:
+    get:
+      tags: [Administração]
+      summary: Listar produtores por validar
+      security: [ { bearerAuth: [] } ]
+      responses:
+        '200': { description: Produtores pendentes }
+        '401': { description: Token em falta ou inválido }
+        '403': { description: Utilizador não administrador }
+  /admin/produtores/{id}/validacao:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string } }
+    patch:
+      tags: [Administração]
+      summary: Aprovar ou rejeitar um produtor
+      security: [ { bearerAuth: [] } ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [aprovado]
+              properties:
+                aprovado: { type: boolean }
+      responses:
+        '200': { description: Produtor atualizado }
+        '400': { description: Dados inválidos }
+        '401': { description: Token em falta ou inválido }
+        '403': { description: Utilizador não administrador }
+        '404': { description: Produtor não encontrado }
+  /admin/reviews/denunciadas:
+    get:
+      tags: [Administração]
+      summary: Listar avaliações denunciadas
+      security: [ { bearerAuth: [] } ]
+      responses:
+        '200': { description: Avaliações denunciadas }
+        '401': { description: Token em falta ou inválido }
+        '403': { description: Utilizador não administrador }
+  /admin/reviews/{id}:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string } }
+    patch:
+      tags: [Administração]
+      summary: Mostrar ou ocultar uma avaliação
+      security: [ { bearerAuth: [] } ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [visivel]
+              properties:
+                visivel: { type: boolean }
+      responses:
+        '200': { description: Avaliação atualizada }
+        '400': { description: Dados inválidos }
+        '401': { description: Token em falta ou inválido }
+        '403': { description: Utilizador não administrador }
+        '404': { description: Avaliação não encontrada }
 components:
   securitySchemes:
     bearerAuth: { type: http, scheme: bearer, bearerFormat: JWT }
@@ -94,3 +445,38 @@ components:
             _id: { type: string }
             produtor: { type: string, description: Id do produtor (ou objeto com populate) }
             imagemUrl: { type: string }
+    OrderInput:
+      type: object
+      required: [linhas]
+      properties:
+        linhas:
+          type: array
+          minItems: 1
+          items:
+            type: object
+            required: [produto, quantidade]
+            properties:
+              produto: { type: string, description: Identificador do produto }
+              quantidade: { type: integer, minimum: 1 }
+        entrega:
+          type: object
+          properties:
+            tipo: { type: string, enum: [levantamento, entrega], default: levantamento }
+            morada: { type: string }
+    Order:
+      type: object
+      properties:
+        _id: { type: string }
+        comprador: { type: string }
+        produtor: { type: string }
+        estado: { type: string, enum: [pendente, confirmada, pronta, entregue] }
+        linhas:
+          type: array
+          items:
+            type: object
+            properties:
+              produto: { type: string }
+              nome: { type: string }
+              precoUnit: { type: number }
+              unidade: { type: string }
+              quantidade: { type: integer }

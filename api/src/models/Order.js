@@ -8,10 +8,16 @@ const orderSchema = new Schema({
   comprador: { type: Types.ObjectId, ref: 'User', required: true },
   produtor: { type: Types.ObjectId, ref: 'User', required: true },
   linhas: [{
-    produto: { type: Types.ObjectId, ref: 'Product' },
-    nome: String,      // cópia do nome no momento da compra
-    precoUnit: Number, // cópia do preço no momento da compra
-    quantidade: { type: Number, min: 1 }
+    produto: { type: Types.ObjectId, ref: 'Product', required: true },
+    nome: { type: String, required: true },      // cópia do nome no momento da compra
+    precoUnit: { type: Number, required: true, min: 0 }, // cópia do preço no momento da compra
+    unidade: { type: String, required: true },   // cópia da unidade no momento da compra
+    quantidade: {
+      type: Number,
+      required: true,
+      min: 1,
+      validate: { validator: Number.isInteger, message: 'A quantidade deve ser um número inteiro' }
+    }
   }],
   estado: { type: String, enum: ESTADOS, default: 'pendente' },
   entrega: {
