@@ -151,11 +151,10 @@ router.patch('/:id/estado', auth('produtor'), a(async (req, res) => {
     throw erro(403, 'Só o produtor destinatário pode alterar esta encomenda');
   }
 
-  const indiceAtual = Order.ESTADOS.indexOf(encomenda.estado);
-  const estadoSeguinte = Order.ESTADOS[indiceAtual + 1];
+  const estadoSeguinte = encomenda.estadoSeguinte();
 
   // Só é aceite a passagem para o estado imediatamente seguinte.
-  if (novoEstado !== estadoSeguinte) {
+  if (!encomenda.podeTransitarPara(novoEstado)) {
     throw erro(409, estadoSeguinte
       ? `A encomenda só pode passar de ${encomenda.estado} para ${estadoSeguinte}`
       : 'A encomenda já está entregue');

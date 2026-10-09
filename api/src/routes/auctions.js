@@ -7,8 +7,6 @@ const auth = require('../middleware/auth');
 const a = require('../utils/async');
 const erro = require('../utils/erro');
 
-const ESTADOS = ['agendado', 'ativo', 'terminado'];
-
 async function atualizarEstados() {
   const agora = new Date();
   await Promise.all([
@@ -17,7 +15,7 @@ async function atualizarEstados() {
       { $set: { estado: 'ativo' } }
     ),
     Auction.updateMany(
-      { estado: { $in: ['agendado', 'ativo'] }, terminaEm: { $lte: agora } },
+      { estado: { $in: ['agendado', 'ativo'] }, terminaEm: { $lt: agora } },
       { $set: { estado: 'terminado' } }
     )
   ]);
@@ -28,7 +26,7 @@ router.get('/', a(async (req, res) => {
   await atualizarEstados();
   const filtro = {};
   if (req.query.estado) {
-    if (!ESTADOS.includes(req.query.estado)) throw erro(400, 'Estado de leilão inválido');
+    if (!Auction.ESTADOS.includes(req.query.estado)) throw erro(400, 'Estado de leilão inválido');
     filtro.estado = req.query.estado;
   }
 
@@ -57,7 +55,7 @@ router.get('/:id', a(async (req, res) => {
 
 // POST /api/auctions  (produtor)  -> 201
 router.post('/', auth('produtor'), a(async (req, res) => {
-  const { produto: produtoId, lote, quantidade, precoBase, incremento } = req.body || {};
+  const { produto: produtoId, lote, descricao, quantidade, precoBase, incremento } = req.body || {};
   const inicio = req.body?.iniciaEm ? new Date(req.body.iniciaEm) : new Date();
   const duracao = Number(req.body?.duracaoMinutos ?? req.body?.duracao);
   const fimIndicado = req.body?.terminaEm ? new Date(req.body.terminaEm) : null;
@@ -94,6 +92,7 @@ router.post('/', auth('produtor'), a(async (req, res) => {
     produtor: req.user.id,
     produto: produto?._id,
     lote: lote.trim(),
+    descricao: typeof descricao === 'string' ? descricao.trim() : undefined,
     quantidade,
     precoBase: Number(precoBase),
     incremento: Number(incremento),

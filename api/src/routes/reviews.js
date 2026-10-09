@@ -48,7 +48,8 @@ router.post('/', auth('comprador'), a(async (req, res) => {
 
 // GET /api/reviews?produtor=&produto=  -> 200 [avaliações visíveis]
 router.get('/', a(async (req, res) => {
-  const filtro = { visivel: true };
+  // Inclui avaliações visíveis e documentos antigos sem o campo; exclui apenas visivel=false.
+  const filtro = { visivel: { $ne: false } };
   if (req.query.produtor) filtro.produtor = req.query.produtor;
   if (req.query.produto) filtro.produto = req.query.produto;
 

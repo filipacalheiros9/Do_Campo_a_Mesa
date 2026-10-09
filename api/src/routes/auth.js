@@ -7,12 +7,6 @@ const auth = require('../middleware/auth');
 const a = require('../utils/async');
 const erro = require('../utils/erro');
 
-const utilizadorPublico = (utilizador) => {
-  const dados = utilizador.toObject();
-  delete dados.passwordHash;
-  return dados;
-};
-
 // POST /api/auth/registo  -> 201 { id }
 router.post('/registo', a(async (req, res) => {
   const { nome, email, password, papel = 'comprador', produtor = {} } = req.body || {};
@@ -57,7 +51,7 @@ router.post('/login', a(async (req, res) => {
 
   const utilizador = await User.findOne({ email: String(email).trim().toLowerCase() })
     .select('+passwordHash');
-  if (!utilizador || !(await bcrypt.compare(String(password), utilizador.passwordHash))) {
+  if (!utilizador || !(await utilizador.passwordCorresponde(password))) {
     throw erro(401, 'Email ou password incorretos');
   }
   if (utilizador.papel === 'produtor' && !utilizador.produtor?.validado) {
@@ -70,14 +64,14 @@ router.post('/login', a(async (req, res) => {
     { expiresIn: process.env.JWT_EXPIRES_IN || '2h' }
   );
 
-  res.json({ token, utilizador: utilizadorPublico(utilizador) });
+  res.json({ token, utilizador: utilizador.publico() });
 }));
 
 // GET /api/auth/eu  -> 200 dados do utilizador autenticado
 router.get('/eu', auth(), a(async (req, res) => {
   const utilizador = await User.findById(req.user.id);
   if (!utilizador) throw erro(404, 'Utilizador não encontrado');
-  res.json(utilizador);
+  res.json(utilizador.publico());
 }));
 
 module.exports = router;

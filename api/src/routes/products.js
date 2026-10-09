@@ -35,14 +35,30 @@ const confirmarDono = (produto, utilizadorId) => {
 // Impede que caracteres como (, *, + ou [ sejam interpretados como uma expressão regular.
 const escaparRegex = (texto) => texto.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
-// GET /api/products?q=&categoria=&precoMax=&bio=&epoca=&produtor=&ordenar=
+// GET /api/products?q=&categoria=&precoMin=&precoMax=&bio=&epoca=&produtor=&ordenar=
 router.get('/', a(async (req, res) => {
-  const { q, categoria, precoMax, bio, epoca, produtor, ordenar } = req.query;
+  const { q, categoria, precoMin, precoMax, bio, epoca, produtor, ordenar } = req.query;
   const filtro = {};
 
   if (q) filtro.nome = { $regex: escaparRegex(String(q).trim()), $options: 'i' };
   if (categoria && categoria !== 'Todos') filtro.categoria = categoria;
-  if (precoMax) filtro.preco = { $lte: Number(precoMax) };
+
+  const minimo = precoMin === undefined || precoMin === '' ? null : Number(precoMin);
+  const maximo = precoMax === undefined || precoMax === '' ? null : Number(precoMax);
+  if ((minimo !== null && (!Number.isFinite(minimo) || minimo < 0))
+      || (maximo !== null && (!Number.isFinite(maximo) || maximo < 0))) {
+    throw erro(400, 'Os preços mínimo e máximo devem ser números não negativos');
+  }
+  if (minimo !== null && maximo !== null && minimo > maximo) {
+    throw erro(400, 'O preço mínimo não pode ser superior ao preço máximo');
+  }
+  if (minimo !== null || maximo !== null) {
+    filtro.preco = {
+      ...(minimo !== null ? { $gte: minimo } : {}),
+      ...(maximo !== null ? { $lte: maximo } : {})
+    };
+  }
+
   if (bio === 'true') filtro.biologico = true;
   if (epoca) filtro.epocas = { $in: [epoca] };
   if (produtor) filtro.produtor = produtor;

@@ -81,7 +81,8 @@ paths:
       parameters:
         - { name: q, in: query, description: Texto no nome, schema: { type: string } }
         - { name: categoria, in: query, schema: { type: string } }
-        - { name: precoMax, in: query, schema: { type: number } }
+        - { name: precoMin, in: query, schema: { type: number, minimum: 0 } }
+        - { name: precoMax, in: query, schema: { type: number, minimum: 0 } }
         - { name: bio, in: query, schema: { type: boolean } }
         - { name: epoca, in: query, schema: { type: string, enum: [Primavera, Verão, Outono, Inverno] } }
         - { name: produtor, in: query, description: Identificador do produtor, schema: { type: string } }
@@ -276,7 +277,8 @@ paths:
               required: [lote, precoBase, incremento, duracao]
               properties:
                 produto: { type: string }
-                lote: { type: string }
+                lote: { type: string, maxLength: 150 }
+                descricao: { type: string, maxLength: 1000 }
                 quantidade: { type: string }
                 precoBase: { type: number, minimum: 0 }
                 incremento: { type: number, exclusiveMinimum: 0 }
