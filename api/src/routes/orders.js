@@ -43,6 +43,12 @@ async function reporStock(reservas) {
 // POST /api/orders  (comprador)  -> 201
 router.post('/', auth('comprador'), a(async (req, res) => {
   const linhasPedidas = validarLinhas(req.body?.linhas);
+  const entregaRecebida = req.body?.entrega;
+  // Só estes campos do objeto de entrega podem chegar ao modelo.
+  const entrega = entregaRecebida ? {
+    tipo: entregaRecebida.tipo,
+    morada: entregaRecebida.morada
+  } : undefined;
 
   // Os dados comerciais são sempre lidos da BD; não se confia no preço enviado pelo cliente.
   const produtos = await Product.find({ _id: { $in: linhasPedidas.map((l) => l.produto) } });
@@ -89,7 +95,7 @@ router.post('/', auth('comprador'), a(async (req, res) => {
         unidade: produto.unidade,
         quantidade
       })),
-      entrega: req.body?.entrega
+      entrega
     });
 
     // Location permite ao cliente saber o endereço do recurso acabado de criar.

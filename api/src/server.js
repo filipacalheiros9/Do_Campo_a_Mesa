@@ -7,13 +7,14 @@ const { ligarBD } = require('./config/db');
 const registarSockets = require('./sockets');
 
 const PORT = process.env.PORT || 3000;
+const CLIENT_URL = process.env.CLIENT_URL || 'http://localhost:5173';
 
 async function iniciar() {
   await ligarBD();
 
   const server = http.createServer(app);
   const io = new Server(server, {
-    cors: { origin: process.env.CLIENT_URL || '*' }
+    cors: { origin: CLIENT_URL }
   });
 
   // Disponibiliza o io às rotas (ex.: notificar o comprador quando a encomenda muda)

@@ -3,6 +3,7 @@ const router = require('express').Router();
 const multer = require('multer');
 const Product = require('../models/Product');
 const auth = require('../middleware/auth');
+const produtorValidado = require('../middleware/produtorValidado');
 const a = require('../utils/async');
 const erro = require('../utils/erro');
 const { guardarImagem } = require('../services/imagens');
@@ -80,7 +81,7 @@ router.get('/:id', a(async (req, res) => {
 }));
 
 // POST /api/products  (produtor)  -> 201 + Location
-router.post('/', auth('produtor'), a(async (req, res) => {
+router.post('/', auth('produtor'), produtorValidado, a(async (req, res) => {
   const produto = await Product.create({
     ...selecionarCampos(req.body),
     produtor: req.user.id

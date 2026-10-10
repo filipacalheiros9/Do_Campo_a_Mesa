@@ -4,6 +4,7 @@ const Auction = require('../models/Auction');
 const Bid = require('../models/Bid');
 const Product = require('../models/Product');
 const auth = require('../middleware/auth');
+const produtorValidado = require('../middleware/produtorValidado');
 const a = require('../utils/async');
 const erro = require('../utils/erro');
 
@@ -54,7 +55,7 @@ router.get('/:id', a(async (req, res) => {
 }));
 
 // POST /api/auctions  (produtor)  -> 201
-router.post('/', auth('produtor'), a(async (req, res) => {
+router.post('/', auth('produtor'), produtorValidado, a(async (req, res) => {
   const { produto: produtoId, lote, descricao, quantidade, precoBase, incremento } = req.body || {};
   const inicio = req.body?.iniciaEm ? new Date(req.body.iniciaEm) : new Date();
   const duracao = Number(req.body?.duracaoMinutos ?? req.body?.duracao);

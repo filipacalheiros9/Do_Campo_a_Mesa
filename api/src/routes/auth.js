@@ -52,14 +52,15 @@ router.post('/login', a(async (req, res) => {
   const utilizador = await User.findOne({ email: String(email).trim().toLowerCase() })
     .select('+passwordHash');
   if (!utilizador || !(await utilizador.passwordCorresponde(password))) {
-    throw erro(401, 'Email ou password incorretos');
+    // A mesma mensagem evita revelar se determinado email está registado.
+    throw erro(401, 'Credenciais inválidas');
   }
   if (utilizador.papel === 'produtor' && !utilizador.produtor?.validado) {
     throw erro(403, 'O registo do produtor ainda aguarda validação');
   }
 
   const token = jwt.sign(
-    { id: utilizador.id, papel: utilizador.papel },
+    { id: utilizador.id, papel: utilizador.papel, nome: utilizador.nome },
     process.env.JWT_SECRET,
     { expiresIn: process.env.JWT_EXPIRES_IN || '2h' }
   );
