@@ -12,6 +12,68 @@
   @include a-partir-de(xl) { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 }
 
+.inicio-hero {
+  display: grid;
+  align-items: stretch;
+  gap: 1.5rem;
+
+  &--com-leilao {
+    @include a-partir-de(lg) {
+      grid-template-columns: minmax(0, 1.5fr) minmax(19rem, .8fr);
+    }
+  }
+
+  &__rotulo {
+    color: $terracota;
+    font-size: .75rem;
+    font-weight: 700;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+  }
+}
+
+.destaque-leilao {
+  padding: 1.25rem;
+  border-radius: $border-radius-lg;
+  background: $verde-escuro;
+  color: $branco;
+
+  h2 {
+    @include serif;
+    font-size: 1.5rem;
+  }
+
+  &__estado {
+    color: #f4c7b6;
+    font-size: .75rem;
+    font-weight: 700;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+  }
+
+  &__produtor {
+    color: rgba($branco, .75);
+    font-size: .85rem;
+  }
+
+  &__dados {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: .75rem;
+
+    div {
+      padding: .75rem;
+      border-radius: $border-radius-sm;
+      background: rgba($branco, .1);
+    }
+
+    span,
+    strong { display: block; }
+    span { color: rgba($branco, .7); font-size: .75rem; }
+    strong { font-size: 1.25rem; font-variant-numeric: tabular-nums; }
+  }
+}
+
 .cartao-produto {
   border-color: $linha;
   overflow: hidden;
@@ -67,6 +129,14 @@ $cores-categoria: (
 
 .filtros {
   display: flex; flex-direction: column; gap: .75rem;
+
+  .btn-outline-secondary {
+    background: $branco;
+
+    &:hover,
+    &:focus { background: $texto-secundario; }
+  }
+
   @include a-partir-de(md) { gap: 1rem; }
   @include a-partir-de(lg) {
     flex-flow: row wrap;

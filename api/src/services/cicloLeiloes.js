@@ -1,5 +1,6 @@
 const Auction = require('../models/Auction');
 const Order = require('../models/Order');
+const Product = require('../models/Product');
 
 const sala = (leilaoId) => `leilao:${leilaoId}`;
 
@@ -36,6 +37,9 @@ async function fecharExpirados(io, agora = new Date()) {
 }
 
 async function obterOuCriarEncomenda(leilao) {
+  const quantidadeStock = leilao.produto
+    ? Number(leilao.quantidadeStock || Number.parseInt(leilao.quantidade, 10))
+    : 0;
   const dados = {
     comprador: leilao.licitacaoAtual.comprador,
     produtor: leilao.produtor,
@@ -51,9 +55,28 @@ async function obterOuCriarEncomenda(leilao) {
     leilao: leilao._id
   };
 
+  let stockReservado = false;
   try {
+    if (leilao.produto && Number.isInteger(quantidadeStock) && quantidadeStock > 0) {
+      const produto = await Product.findOneAndUpdate(
+        { _id: leilao.produto, stock: { $gte: quantidadeStock } },
+        { $inc: { stock: -quantidadeStock } },
+        { new: true }
+      );
+      if (!produto) {
+        throw new Error(`Stock insuficiente para concluir o leilão «${leilao.lote}»`);
+      }
+      stockReservado = true;
+    }
+
     return await Order.create(dados);
   } catch (err) {
+    if (stockReservado) {
+      await Product.updateOne(
+        { _id: leilao.produto },
+        { $inc: { stock: quantidadeStock } }
+      );
+    }
     // O índice único resolve uma tentativa simultânea feita por outra instância.
     if (err?.code === 11000) return Order.findOne({ leilao: leilao._id });
     throw err;

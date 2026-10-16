@@ -4,9 +4,162 @@
 @import 'mixins';
 @import 'catalogo';
 
-.barra-topo { background: $branco; border-bottom: 1px solid $linha; }
+.barra-topo {
+  background: $branco;
+  border-bottom: 1px solid $linha;
+
+  .nav-link.active { color: $verde-escuro; font-weight: 600; }
+}
 .marca { @include serif; color: $tinta; }
 .texto-secundario { color: $texto-secundario; }
+
+// O bege pertence ao fundo geral; os elementos de conteúdo assentam sobre branco.
+.card,
+.dropdown-menu,
+.list-group-item,
+.form-control,
+.form-select,
+.input-group-text,
+.alert-light {
+  background-color: $branco;
+}
+
+.dropdown-menu { border-color: $linha; box-shadow: 0 .5rem 1.5rem rgba($tinta, .1); }
+
+.botao-acao-circular {
+  display: grid;
+  width: 2.3rem;
+  height: 2.3rem;
+  place-items: center;
+  border-radius: 50%;
+  background: rgba($verde, .08);
+  color: $tinta;
+  text-decoration: none;
+
+  &:hover, &:focus, &.active { background: rgba($verde, .16); color: $verde; }
+  .navegacao-movel__icone { width: 1.1rem; height: 1.1rem; }
+  .badge { font-size: .55rem; }
+}
+
+.botao-utilizador {
+  display: flex;
+  align-items: center;
+  gap: .55rem;
+  padding: .2rem .35rem;
+  border: 0;
+  color: $tinta;
+  text-align: left;
+
+  &::after { display: none; }
+  &:hover, &:focus, &.show { background: rgba($verde, .07); color: $tinta; }
+
+  &__avatar {
+    display: grid;
+    width: 2.1rem;
+    height: 2.1rem;
+    place-items: center;
+    border-radius: 50%;
+    background: $terracota;
+    color: $branco;
+    font-size: .72rem;
+    font-weight: 700;
+  }
+
+  &__texto {
+    display: flex;
+    max-width: 10rem;
+    flex-direction: column;
+    line-height: 1.05;
+
+    strong, small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    strong { font-size: .78rem; }
+    small { margin-top: .2rem; color: $texto-secundario; font-size: .65rem; }
+  }
+}
+
+@media (max-width: 991.98px) {
+  body { padding-bottom: calc(4.4rem + env(safe-area-inset-bottom)); }
+
+  .barra-topo {
+    .navbar { padding: .65rem 1rem; }
+    .marca {
+      max-width: calc(100% - 5rem);
+      margin-right: .5rem;
+      overflow: hidden;
+      font-size: 1.35rem;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+  }
+}
+
+.navegacao-movel {
+  position: fixed;
+  z-index: 1090;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  display: flex;
+  align-items: stretch;
+  padding: .35rem max(.35rem, env(safe-area-inset-right)) calc(.3rem + env(safe-area-inset-bottom)) max(.35rem, env(safe-area-inset-left));
+  border-top: 1px solid $linha;
+  background: rgba($branco, .98);
+  box-shadow: 0 -.25rem 1rem rgba($tinta, .08);
+
+  &__aba {
+    position: relative;
+    display: flex;
+    flex: 1 1 0;
+    min-width: 0;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: .1rem;
+    padding: .3rem .15rem;
+    border-radius: $border-radius-sm;
+    color: $texto-secundario;
+    font-size: .68rem;
+    font-weight: 600;
+    line-height: 1.1;
+    text-align: center;
+
+    &.active { color: $verde; background: rgba($verde, .08); }
+  }
+
+  &__icone-caixa { position: relative; display: grid; place-items: center; }
+  &__icone {
+    width: 1.35rem;
+    height: 1.35rem;
+    fill: none;
+    stroke: currentColor;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 1.8;
+  }
+
+  &__contador {
+    position: absolute;
+    top: -.4rem;
+    right: -.65rem;
+    min-width: 1rem;
+    padding: .1rem .25rem;
+    border-radius: 1rem;
+    background: $terracota;
+    color: $branco;
+    font-size: .55rem;
+  }
+
+  &__direto {
+    position: absolute;
+    top: -.15rem;
+    right: -.3rem;
+    width: .45rem;
+    height: .45rem;
+    border: 2px solid $branco;
+    border-radius: 50%;
+    background: $terracota;
+  }
+}
 
 .saltar-conteudo {
   position: fixed;
@@ -91,6 +244,9 @@
 }
 
 .historico-licitacoes {
+  --bs-table-bg: #{$branco};
+  --bs-table-striped-bg: #{$branco};
+
   th { color: $texto-secundario; font-size: .8rem; text-transform: uppercase; }
   td { padding-block: .65rem; }
 }

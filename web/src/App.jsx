@@ -17,11 +17,15 @@ import PerfilProdutor from './pages/produtor/Perfil.jsx';
 import NovoLeilao from './pages/produtor/NovoLeilao.jsx';
 import PainelAdmin from './pages/admin/Painel.jsx';
 import NaoEncontrado from './pages/NaoEncontrado.jsx';
+import CentroNotificacoes from './pages/CentroNotificacoes.jsx';
+import PerfilComprador from './pages/PerfilComprador.jsx';
+import IrParaTopo from './components/IrParaTopo.jsx';
 
 export default function App() {
   return (
     <>
       <a className="btn btn-light saltar-conteudo" href="#conteudo">Saltar para o conteúdo</a>
+      <IrParaTopo />
       <Navbar />
       <Notificacoes />
       <main id="conteudo" className="container-xl py-4" tabIndex="-1">
@@ -36,12 +40,14 @@ export default function App() {
           {/* Qualquer utilizador autenticado pode assistir; só compradores licitam */}
           <Route element={<RotaProtegida />}>
             <Route path="/leiloes/:id" element={<SalaLeilao />} />
+            <Route path="/notificacoes" element={<CentroNotificacoes />} />
           </Route>
 
           {/* Comprador */}
           <Route element={<RotaProtegida papeis={['comprador']} />}>
             <Route path="/carrinho" element={<Carrinho />} />
             <Route path="/encomendas" element={<Encomendas />} />
+            <Route path="/perfil" element={<PerfilComprador />} />
           </Route>
 
           {/* Produtor */}

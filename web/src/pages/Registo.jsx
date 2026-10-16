@@ -11,7 +11,8 @@ export default function Registo() {
     password: '',
     papel: 'comprador',
     nomeExploracao: '',
-    localidade: ''
+    localidade: '',
+    codigoPostal: ''
   });
   const [erro, setErro] = useState('');
   const [aEnviar, setAEnviar] = useState(false);
@@ -35,7 +36,8 @@ export default function Registo() {
         ...(produtor ? {
           produtor: {
             nomeExploracao: dados.nomeExploracao,
-            localidade: dados.localidade
+            localidade: dados.localidade,
+            codigoPostal: dados.codigoPostal
           }
         } : {})
       });
@@ -89,6 +91,11 @@ export default function Registo() {
           <label htmlFor="localidade" className="form-label">Localidade</label>
           <input id="localidade" className="form-control mb-3" required maxLength="100"
             value={dados.localidade} onChange={(e) => alterar('localidade', e.target.value)} />
+
+          <label htmlFor="codigoPostal" className="form-label">Código postal</label>
+          <input id="codigoPostal" className="form-control mb-3" required inputMode="numeric"
+            pattern="[0-9]{4}-[0-9]{3}" placeholder="0000-000" maxLength="8"
+            value={dados.codigoPostal} onChange={(e) => alterar('codigoPostal', e.target.value)} />
         </>
       )}
 

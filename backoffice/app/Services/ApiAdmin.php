@@ -31,4 +31,9 @@ class ApiAdmin
     {
         return $this->pedido($token)->patch($caminho, $dados)->throw()->json();
     }
+
+    public function eliminar(string $caminho, string $token): void
+    {
+        $this->pedido($token)->delete($caminho)->throw();
+    }
 }

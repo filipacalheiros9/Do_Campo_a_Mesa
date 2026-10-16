@@ -13,6 +13,11 @@ const produtorSchema = new Schema({
   nomeExploracao: { type: String, required: true, trim: true, maxlength: 100 },
   descricao: { type: String, trim: true, maxlength: 1000 },
   localidade: { type: String, required: true, trim: true, maxlength: 100 },
+  codigoPostal: {
+    type: String,
+    trim: true,
+    match: [/^\d{4}-\d{3}$/, 'Código postal inválido']
+  },
   localizacao: localizacaoSchema,
   validado: { type: Boolean, default: false }
 }, { _id: false });

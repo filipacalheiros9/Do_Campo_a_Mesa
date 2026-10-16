@@ -16,6 +16,12 @@ const auctionSchema = new Schema({
   lote: { type: String, required: true, trim: true, maxlength: 150 },
   descricao: { type: String, trim: true, maxlength: 1000 },
   quantidade: { type: String, trim: true },
+  // Quantidade numérica retirada do stock quando o lote tem um produto associado.
+  quantidadeStock: {
+    type: Number,
+    min: 1,
+    validate: { validator: Number.isInteger, message: 'A quantidade do lote deve ser um número inteiro' }
+  },
   precoBase: { type: Number, required: true, min: 0 },
   incremento: { type: Number, required: true, min: 0.01 },
   // Começa com valor = precoBase; a 1.ª licitação tem de ser >= precoBase + incremento

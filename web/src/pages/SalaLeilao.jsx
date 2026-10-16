@@ -15,7 +15,8 @@ export default function SalaLeilao() {
   const {
     leilao, atual, licitacoes, participantes, erro, resultado, offset, licitar
   } = useLeilao(id);
-  const restante = useContagem(leilao?.terminaEm, offset);
+  const leilaoAtivo = leilao?.estado === 'ativo';
+  const restante = useContagem(leilaoAtivo ? leilao?.terminaEm : null, offset);
   const [valor, setValor] = useState('');
   const valorAtual = Number(atual?.valor ?? leilao?.precoBase ?? 0);
   const incremento = Number(leilao?.incremento ?? 0);
@@ -23,7 +24,7 @@ export default function SalaLeilao() {
   const souComprador = utilizador?.papel === 'comprador';
   const estouAGanhar = souComprador
     && String(atual?.comprador || '') === String(utilizador?._id || '');
-  const ativo = leilao?.estado === 'ativo' && restante > 0;
+  const ativo = leilaoAtivo && restante > 0;
   const produtor = leilao?.produtor;
   const nomeProdutor = produtor?.produtor?.nomeExploracao || produtor?.nome || '—';
   const nomeVencedor = atual?.nome || (estouAGanhar ? utilizador?.nome : null) || 'Comprador';
@@ -92,10 +93,21 @@ export default function SalaLeilao() {
       </section>
 
       <aside className="card p-4 sala-leilao__painel">
-        <p className="texto-secundario small mb-0">Tempo restante</p>
-        <p className="contagem-leilao mb-3" aria-live="off">
-          {leilao.estado === 'terminado' ? 'Terminado' : formatarTempo(restante)}
-        </p>
+        {leilao.estado === 'ativo' && (
+          <>
+            <p className="texto-secundario small mb-0">Tempo restante</p>
+            <p className="contagem-leilao mb-3" aria-live="off">{formatarTempo(restante)}</p>
+          </>
+        )}
+        {leilao.estado === 'agendado' && (
+          <>
+            <p className="texto-secundario small mb-0">Início previsto</p>
+            <p className="h5 mb-3">{new Date(leilao.iniciaEm).toLocaleString('pt-PT')}</p>
+          </>
+        )}
+        {leilao.estado === 'terminado' && (
+          <p className="contagem-leilao mb-3">Terminado</p>
+        )}
         <p className="texto-secundario small mb-0">Licitação atual</p>
         <p className="valor-atual mb-1">{euros.format(valorAtual)}</p>
         {leilao.estado !== 'terminado' && (

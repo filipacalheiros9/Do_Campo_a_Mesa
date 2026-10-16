@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
 import { api, enviarFicheiro, urlFicheiro } from '../../api/client.js';
 import { useAuth } from '../../context/AuthContext.jsx';
+import { useEventoSocket } from '../../context/SocketContext.jsx';
 import { useApi } from '../../hooks/useApi.js';
 
 const CATEGORIAS = ['Hortícolas', 'Fruta', 'Mel', 'Vinho', 'Queijo', 'Padaria', 'Outros'];
@@ -17,6 +17,10 @@ export default function ProdutosProdutor() {
   const [mensagem, setMensagem] = useState('');
   const [erroForm, setErroForm] = useState('');
   const [aEnviar, setAEnviar] = useState(false);
+
+  // Uma nova encomenda já descontou o stock na API; atualiza a lista sem refresh manual.
+  useEventoSocket('nova-encomenda', recarregar);
+  useEventoSocket('leilao-terminado', recarregar);
 
   function editar(produto) {
     setEdicao(produto._id);
@@ -81,13 +85,12 @@ export default function ProdutosProdutor() {
 
   return (
     <>
-      <div className="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
+      <header className="destaque mb-4">
         <div>
           <p className="texto-secundario mb-1">Área do produtor</p>
           <h1 className="mb-0">Os meus produtos</h1>
         </div>
-        <Link className="btn btn-outline-secondary" to="/produtor/perfil">Editar página pública</Link>
-      </div>
+      </header>
 
       <form className="card card-body mb-4" onSubmit={guardar}>
         <h2 className="h4">{edicao ? 'Editar produto' : 'Adicionar produto'}</h2>

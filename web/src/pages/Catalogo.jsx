@@ -1,13 +1,17 @@
 // Visitante: catálogo com pesquisa e filtros
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import CartaoProduto from '../components/CartaoProduto.jsx';
 import { useCarrinho } from '../context/CarrinhoContext.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
 import { api, USAR_DADOS_SIMULADOS } from '../api/client.js';
+import { formatarTempo, useContagem } from '../hooks/useContagem.js';
+import { useLeiloesEmDireto } from '../hooks/useLeiloesEmDireto.js';
 import produtosSimulados from '../data/produtos.json';
 
 const CATEGORIAS = ['Todos', 'Hortícolas', 'Fruta', 'Mel', 'Vinho', 'Queijo', 'Padaria'];
 const EPOCAS = ['Todas', 'Primavera', 'Verão', 'Outono', 'Inverno'];
+const euros = new Intl.NumberFormat('pt-PT', { style: 'currency', currency: 'EUR' });
 
 export default function Catalogo() {
   const [produtos, setProdutos] = useState([]);
@@ -18,6 +22,12 @@ export default function Catalogo() {
   const [erro, setErro] = useState('');
   const carrinho = useCarrinho();
   const { utilizador } = useAuth();
+  const leiloesDestaque = useLeiloesEmDireto(5000, true);
+  const leilaoDestaque = leiloesDestaque[0];
+  const prestesAComecar = leilaoDestaque?.estado === 'agendado';
+  const tempoRestante = useContagem(
+    prestesAComecar ? leilaoDestaque?.iniciaEm : leilaoDestaque?.terminaEm
+  );
 
   useEffect(() => {
     if (USAR_DADOS_SIMULADOS) {
@@ -71,9 +81,44 @@ export default function Catalogo() {
 
   return (
     <>
-      <section className="destaque mb-4">
-        <h1>Direto de quem produz, para a sua mesa.</h1>
-        <p className="texto-secundario">Produtores do Alto Minho. Encomende ou dispute os lotes da época nos leilões em direto.</p>
+      <section className={`inicio-hero mb-4 ${leilaoDestaque ? 'inicio-hero--com-leilao' : ''}`}>
+        <div className="destaque">
+          <p className="inicio-hero__rotulo mb-2">Alto Minho · Produção local</p>
+          <h1>Direto de quem produz, para a sua mesa.</h1>
+          <p className="texto-secundario mb-0">
+            Produtores do Alto Minho. Encomende ou dispute os lotes da época nos leilões em direto.
+          </p>
+        </div>
+
+        {leilaoDestaque && (
+          <aside className="destaque-leilao"
+            aria-label={prestesAComecar ? 'Leilão prestes a começar' : 'Leilão em direto'}>
+            <div className="d-flex justify-content-between align-items-center gap-2 mb-2">
+              <span className="destaque-leilao__estado">
+                ● {prestesAComecar ? 'Começa dentro de 5 minutos' : 'Leilão em direto'}
+              </span>
+              <span className="small">{leilaoDestaque.numLicitacoes || 0} licitações</span>
+            </div>
+            <h2>{leilaoDestaque.lote}</h2>
+            <p className="destaque-leilao__produtor">
+              {leilaoDestaque.produtor?.produtor?.nomeExploracao || leilaoDestaque.produtor?.nome}
+              {leilaoDestaque.produtor?.produtor?.localidade
+                ? ` · ${leilaoDestaque.produtor.produtor.localidade}` : ''}
+            </p>
+            <div className="destaque-leilao__dados">
+              <div><span>{prestesAComecar ? 'Preço base' : 'Licitação atual'}</span><strong>{euros.format(
+                Number(leilaoDestaque.licitacaoAtual?.valor ?? leilaoDestaque.precoBase)
+              )}</strong></div>
+              <div><span>{prestesAComecar ? 'Começa em' : 'Termina em'}</span>
+                <strong>{formatarTempo(tempoRestante)}</strong></div>
+            </div>
+            <Link className="btn btn-light w-100 mt-3" to={`/leiloes/${leilaoDestaque._id}`}>
+              {prestesAComecar
+                ? 'Ver leilão'
+                : (utilizador?.papel === 'comprador' ? 'Entrar e licitar' : 'Entrar no leilão')}
+            </Link>
+          </aside>
+        )}
       </section>
 
       <section className="filtros mb-3" aria-label="Filtros">

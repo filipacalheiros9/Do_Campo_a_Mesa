@@ -13,6 +13,7 @@ export default function NovoLeilao() {
   });
   const [erro, setErro] = useState('');
   const [aEnviar, setAEnviar] = useState(false);
+  const produtoSelecionado = (produtos || []).find((produto) => produto._id === dados.produto);
 
   async function submeter(e) {
     e.preventDefault();
@@ -54,8 +55,13 @@ export default function NovoLeilao() {
       <label className="form-label" htmlFor="leilao-descricao">Descrição</label>
       <textarea id="leilao-descricao" className="form-control mb-3" rows="3" maxLength="1000"
         value={dados.descricao} onChange={alterar('descricao')} />
-      <label className="form-label" htmlFor="leilao-quantidade">Quantidade</label>
-      <input id="leilao-quantidade" className="form-control mb-3" placeholder="Ex.: 200 kg"
+      <label className="form-label" htmlFor="leilao-quantidade">
+        Quantidade{produtoSelecionado ? ` (${produtoSelecionado.unidade})` : ''}
+      </label>
+      <input id="leilao-quantidade" type={produtoSelecionado ? 'number' : 'text'}
+        min={produtoSelecionado ? '1' : undefined} step={produtoSelecionado ? '1' : undefined}
+        required={Boolean(produtoSelecionado)} className="form-control mb-3"
+        placeholder={produtoSelecionado ? `Disponível: ${produtoSelecionado.stock}` : 'Ex.: lote completo'}
         value={dados.quantidade} onChange={alterar('quantidade')} />
       <div className="row g-3 mb-3">
         <div className="col-6"><label className="form-label" htmlFor="preco-base">Preço base</label>

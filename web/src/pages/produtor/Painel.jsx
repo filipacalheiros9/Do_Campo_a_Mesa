@@ -13,14 +13,20 @@ const euros = new Intl.NumberFormat('pt-PT', { style: 'currency', currency: 'EUR
 export default function PainelProdutor() {
   const { utilizador, token } = useAuth();
   const { dados, erro, aCarregar, recarregar, setDados } = useApi('/orders');
-  const { dados: estatisticas } = useApi('/producers/me/estatisticas');
+  const { dados: estatisticas, recarregar: recarregarEstatisticas } = useApi('/producers/me/estatisticas');
   const { dados: leiloes } = useApi(`/auctions?produtor=${utilizador._id}`);
   const [erroAlteracao, setErroAlteracao] = useState('');
   const [aAlterar, setAAlterar] = useState('');
   const encomendas = dados || [];
 
-  useEventoSocket('nova-encomenda', recarregar);
-  useEventoSocket('leilao-terminado', recarregar);
+  const atualizarPainel = () => {
+    recarregar();
+    recarregarEstatisticas();
+  };
+
+  useEventoSocket('nova-encomenda', atualizarPainel);
+  useEventoSocket('leilao-terminado', atualizarPainel);
+  useEventoSocket('nova-avaliacao', recarregarEstatisticas);
 
   const avancarEstado = async (encomenda) => {
     const estado = ESTADO_SEGUINTE[encomenda.estado];
@@ -43,22 +49,49 @@ export default function PainelProdutor() {
 
   return (
     <>
-      <div className="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
+      <header className="destaque d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
         <h1 className="mb-0">Painel do produtor</h1>
         <Link to="/produtor/leiloes/novo" className="btn btn-success">Criar leilão</Link>
-      </div>
+      </header>
 
       <section className="row g-3 mb-4" aria-label="Indicadores de vendas">
         {[
           ['Produtos', estatisticas?.produtos ?? 0],
           ['Encomendas', estatisticas?.encomendas ?? 0],
           ['Leilões', estatisticas?.leiloes ?? 0],
-          ['Vendas entregues', euros.format(estatisticas?.totalVendas ?? 0)]
+          ['Vendas entregues', euros.format(estatisticas?.totalVendas ?? 0)],
+          ['Avaliação média', estatisticas?.avaliacaoMedia == null
+            ? 'Sem avaliações'
+            : `${estatisticas.avaliacaoMedia.toFixed(1)} / 5 (${estatisticas.totalAvaliacoes})`]
         ].map(([rotulo, valor]) => (
-          <div className="col-6 col-lg-3" key={rotulo}><div className="card card-body h-100">
+          <div className="col-6 col-lg" key={rotulo}><div className="card card-body h-100">
             <span className="texto-secundario small">{rotulo}</span><strong className="fs-4">{valor}</strong>
           </div></div>
         ))}
+      </section>
+
+      <section className="card card-body mb-4" aria-labelledby="titulo-stock-baixo">
+        <div className="d-flex justify-content-between align-items-center gap-3 mb-3">
+          <div>
+            <h2 className="h4 mb-1" id="titulo-stock-baixo">Stock baixo</h2>
+            <p className="texto-secundario small mb-0">Produtos com cinco unidades ou menos.</p>
+          </div>
+          <Link to="/produtor/produtos" className="btn btn-sm btn-outline-secondary">Repor stock</Link>
+        </div>
+
+        {estatisticas?.stockBaixo?.length ? (
+          <div className="list-group list-group-flush">
+            {estatisticas.stockBaixo.map((produto) => (
+              <Link to="/produtor/produtos" className="list-group-item list-group-item-action px-0
+                d-flex justify-content-between align-items-center gap-3" key={produto._id}>
+                <span>{produto.nome}</span>
+                <strong className="text-danger">{produto.stock} {produto.unidade}</strong>
+              </Link>
+            ))}
+          </div>
+        ) : (
+          <p className="text-success mb-0">Não existem produtos com stock baixo.</p>
+        )}
       </section>
 
       <section className="mb-4">
@@ -100,7 +133,7 @@ export default function PainelProdutor() {
           </div>
           <EstadoEncomenda estado={encomenda.estado} />
           {ESTADO_SEGUINTE[encomenda.estado] && (
-            <button type="button" className="btn btn-outline-success align-self-start mt-3"
+            <button type="button" className="btn btn-success align-self-start mt-3"
               disabled={aAlterar === encomenda._id} onClick={() => avancarEstado(encomenda)}>
               {aAlterar === encomenda._id
                 ? 'A atualizar…'

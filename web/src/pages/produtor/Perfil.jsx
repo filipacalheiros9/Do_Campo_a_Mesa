@@ -9,8 +9,7 @@ export default function PerfilProdutor() {
     nomeExploracao: perfil.nomeExploracao || '',
     descricao: perfil.descricao || '',
     localidade: perfil.localidade || '',
-    lat: perfil.localizacao?.lat ?? '',
-    lng: perfil.localizacao?.lng ?? ''
+    codigoPostal: perfil.codigoPostal || ''
   });
   const [mensagem, setMensagem] = useState('');
   const [erro, setErro] = useState('');
@@ -25,9 +24,7 @@ export default function PerfilProdutor() {
           nomeExploracao: dados.nomeExploracao,
           descricao: dados.descricao,
           localidade: dados.localidade,
-          ...(dados.lat !== '' && dados.lng !== '' ? {
-            localizacao: { lat: Number(dados.lat), lng: Number(dados.lng) }
-          } : {})
+          codigoPostal: dados.codigoPostal
         }
       });
       guardarSessao({ token, utilizador: atualizado });
@@ -39,7 +36,9 @@ export default function PerfilProdutor() {
 
   return (
     <form className="formulario-estreito" onSubmit={guardar}>
-      <h1>Perfil público</h1>
+      <header className="destaque mb-4">
+        <h1 className="mb-0">Perfil público</h1>
+      </header>
       <label className="form-label" htmlFor="exploracao">Nome da exploração</label>
       <input id="exploracao" className="form-control mb-3" required value={dados.nomeExploracao}
         onChange={(e) => setDados({ ...dados, nomeExploracao: e.target.value })} />
@@ -49,14 +48,10 @@ export default function PerfilProdutor() {
       <label className="form-label" htmlFor="localidade">Localidade</label>
       <input id="localidade" className="form-control mb-3" required value={dados.localidade}
         onChange={(e) => setDados({ ...dados, localidade: e.target.value })} />
-      <div className="row g-3 mb-3">
-        <div className="col-6"><label className="form-label" htmlFor="latitude">Latitude</label>
-          <input id="latitude" type="number" step="any" min="-90" max="90" className="form-control"
-            value={dados.lat} onChange={(e) => setDados({ ...dados, lat: e.target.value })} /></div>
-        <div className="col-6"><label className="form-label" htmlFor="longitude">Longitude</label>
-          <input id="longitude" type="number" step="any" min="-180" max="180" className="form-control"
-            value={dados.lng} onChange={(e) => setDados({ ...dados, lng: e.target.value })} /></div>
-      </div>
+      <label className="form-label" htmlFor="codigo-postal">Código postal</label>
+      <input id="codigo-postal" className="form-control mb-3" required inputMode="numeric"
+        pattern="[0-9]{4}-[0-9]{3}" placeholder="0000-000" maxLength="8"
+        value={dados.codigoPostal} onChange={(e) => setDados({ ...dados, codigoPostal: e.target.value })} />
       {mensagem && <div className="alert alert-success">{mensagem}</div>}
       {erro && <div className="alert alert-danger">{erro}</div>}
       <button className="btn btn-success w-100">Guardar perfil</button>

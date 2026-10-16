@@ -39,6 +39,48 @@ body {
     gap: 0.75rem;
 }
 
+.identidade-admin {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+}
+
+.identidade-admin__avatar {
+    display: grid;
+    width: 2.25rem;
+    height: 2.25rem;
+    place-items: center;
+    border-radius: 50%;
+    background: #2f5d3a;
+    color: #fff;
+    font-size: 0.72rem;
+    font-weight: 700;
+}
+
+.identidade-admin__texto {
+    display: flex;
+    max-width: 10rem;
+    flex-direction: column;
+    line-height: 1.05;
+}
+
+.identidade-admin__texto strong,
+.identidade-admin__texto small {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.identidade-admin__texto strong {
+    font-size: 0.78rem;
+}
+
+.identidade-admin__texto small {
+    margin-top: 0.2rem;
+    color: #5a6354;
+    font-size: 0.65rem;
+}
+
 .conteudo {
     max-width: 1200px;
     margin: auto;
@@ -76,6 +118,110 @@ h2 {
 
 .indicador strong {
     font-size: 2rem;
+}
+
+.painel-tempo-real {
+    margin-top: 1rem;
+}
+
+.cabecalho-secao {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.cabecalho-secao h2 {
+    margin: 0;
+}
+
+.estado-ligacao {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    color: #2f5d3a;
+    font-size: 0.82rem;
+    font-weight: 700;
+}
+
+.estado-ligacao i {
+    width: 0.55rem;
+    height: 0.55rem;
+    border-radius: 50%;
+    background: #2f8b4a;
+}
+
+.leiloes-ativos {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.75rem;
+}
+
+.leilao-ativo {
+    display: flex;
+    flex-direction: column;
+    padding: 0.85rem;
+    border-radius: 0.65rem;
+    background: #f8f5ef;
+}
+
+.leilao-ativo span {
+    color: #5a6354;
+    font-size: 0.86rem;
+}
+
+.estado-servicos {
+    margin-top: 1rem;
+}
+
+.servico {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    gap: 0.7rem;
+    padding: 0.65rem 0;
+    border-top: 1px solid #e3daca;
+}
+
+.servico:first-child {
+    border-top: 0;
+}
+
+.servico i {
+    width: 0.55rem;
+    height: 0.55rem;
+    border-radius: 50%;
+}
+
+.servico i.operacional {
+    background: #2f8b4a;
+}
+
+.servico i.indisponivel {
+    background: #a3281c;
+}
+
+.servico div {
+    display: flex;
+    flex-direction: column;
+}
+
+.servico span {
+    color: #5a6354;
+    font-size: 0.82rem;
+}
+
+.servico b {
+    font-size: 0.8rem;
+}
+
+.texto-operacional {
+    color: #2f5d3a;
+}
+
+.texto-indisponivel {
+    color: #a3281c;
 }
 
 .linha {
@@ -189,11 +335,15 @@ th {
         flex-direction: column;
     }
 
+    .leiloes-ativos {
+        grid-template-columns: 1fr;
+    }
+
     .topo {
         align-items: flex-start;
     }
 
-    .sessao span {
+    .sessao .identidade-admin__texto {
         display: none;
     }
 }

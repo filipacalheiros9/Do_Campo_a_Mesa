@@ -70,6 +70,7 @@ paths:
                     nomeExploracao: { type: string, maxLength: 100, example: Quinta da Serra }
                     descricao: { type: string, maxLength: 1000 }
                     localidade: { type: string, maxLength: 100, example: Ponte de Lima }
+                    codigoPostal: { type: string, pattern: '^\d{4}-\d{3}$', example: 4990-150 }
       responses:
         '201':
           description: Utilizador registado
@@ -116,6 +117,48 @@ paths:
               schema: { $ref: '#/components/schemas/Utilizador' }
         '401': { $ref: '#/components/responses/NaoAutorizado' }
         '404': { $ref: '#/components/responses/NaoEncontrado' }
+    patch:
+      operationId: atualizarCompradorAtual
+      tags: [Autenticação]
+      summary: Atualizar o perfil do comprador autenticado
+      security: [ { bearerAuth: [] } ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [nome, email]
+              properties:
+                nome: { type: string, maxLength: 100 }
+                email: { type: string, format: email }
+      responses:
+        '200': { $ref: '#/components/responses/Sessao' }
+        '400': { $ref: '#/components/responses/PedidoInvalido' }
+        '401': { $ref: '#/components/responses/NaoAutorizado' }
+        '403': { $ref: '#/components/responses/Proibido' }
+        '404': { $ref: '#/components/responses/NaoEncontrado' }
+        '409': { $ref: '#/components/responses/Conflito' }
+  /auth/password:
+    patch:
+      operationId: alterarPassword
+      tags: [Autenticação]
+      summary: Alterar a palavra-passe do utilizador autenticado
+      security: [ { bearerAuth: [] } ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [passwordAtual, novaPassword]
+              properties:
+                passwordAtual: { type: string, format: password }
+                novaPassword: { type: string, format: password, minLength: 8 }
+      responses:
+        '204': { description: Palavra-passe alterada }
+        '400': { $ref: '#/components/responses/PedidoInvalido' }
+        '401': { $ref: '#/components/responses/NaoAutorizado' }
   /producers:
     get:
       operationId: listarProdutores
@@ -151,11 +194,7 @@ paths:
                 nomeExploracao: { type: string, maxLength: 100, example: Horta da Ribeira }
                 descricao: { type: string, maxLength: 1000 }
                 localidade: { type: string, maxLength: 100, example: Ponte de Lima }
-                localizacao:
-                  type: object
-                  properties:
-                    lat: { type: number, minimum: -90, maximum: 90, example: 41.7676 }
-                    lng: { type: number, minimum: -180, maximum: 180, example: -8.5833 }
+                codigoPostal: { type: string, pattern: '^\d{4}-\d{3}$', example: 4990-150 }
       responses:
         '200':
           description: Perfil atualizado
@@ -569,6 +608,29 @@ paths:
                   leiloesAtivos: { type: integer, minimum: 0, example: 1 }
         '401': { $ref: '#/components/responses/NaoAutorizado' }
         '403': { $ref: '#/components/responses/Proibido' }
+  /admin/servicos:
+    get:
+      operationId: obterEstadoServicos
+      tags: [Administração]
+      summary: Consultar o estado técnico dos serviços da aplicação
+      security: [ { bearerAuth: [] } ]
+      responses:
+        '200':
+          description: Estado observado pela API
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  required: [id, nome, operacional, detalhe]
+                  properties:
+                    id: { type: string, example: mongo }
+                    nome: { type: string, example: MongoDB }
+                    operacional: { type: boolean, example: true }
+                    detalhe: { type: string, example: Base de dados ligada }
+        '401': { $ref: '#/components/responses/NaoAutorizado' }
+        '403': { $ref: '#/components/responses/Proibido' }
   /admin/produtores/pendentes:
     get:
       operationId: listarProdutoresPendentes
@@ -669,6 +731,20 @@ paths:
               schema: { type: array, items: { $ref: '#/components/schemas/Utilizador' } }
         '401': { $ref: '#/components/responses/NaoAutorizado' }
         '403': { $ref: '#/components/responses/Proibido' }
+  /admin/utilizadores/{id}:
+    parameters:
+      - $ref: '#/components/parameters/Id'
+    delete:
+      operationId: eliminarUtilizadorAdmin
+      tags: [Administração]
+      summary: Eliminar um utilizador sem atividade associada
+      security: [ { bearerAuth: [] } ]
+      responses:
+        '204': { description: Utilizador eliminado }
+        '401': { $ref: '#/components/responses/NaoAutorizado' }
+        '403': { $ref: '#/components/responses/Proibido' }
+        '404': { $ref: '#/components/responses/NaoEncontrado' }
+        '409': { description: Conta protegida por ter atividade associada ou ser a sessão atual }
   /admin/encomendas:
     get:
       operationId: listarEncomendasAdmin
@@ -799,6 +875,7 @@ components:
             nomeExploracao: { type: string, maxLength: 100, example: Horta da Ribeira }
             descricao: { type: string, maxLength: 1000 }
             localidade: { type: string, maxLength: 100, example: Ponte de Lima }
+            codigoPostal: { type: string, pattern: '^\d{4}-\d{3}$', example: 4990-150 }
             localizacao:
               type: object
               properties:
@@ -927,6 +1004,7 @@ components:
         lote: { type: string, minLength: 1, maxLength: 150, example: Caixa de 20 kg de kiwi }
         descricao: { type: string, maxLength: 1000 }
         quantidade: { type: string, example: 20 kg }
+        quantidadeStock: { type: integer, minimum: 1, example: 20 }
         precoBase: { type: number, format: double, minimum: 0, example: 40 }
         incremento: { type: number, format: double, minimum: 0.01, example: 2.5 }
     LeilaoInput:

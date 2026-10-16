@@ -1,14 +1,47 @@
 // Painel do administrador.
 const router = require('express').Router();
 const User = require('../models/User');
+const Product = require('../models/Product');
 const Order = require('../models/Order');
 const Auction = require('../models/Auction');
+const Bid = require('../models/Bid');
 const Review = require('../models/Review');
+const mongoose = require('mongoose');
 const auth = require('../middleware/auth');
 const a = require('../utils/async');
 const erro = require('../utils/erro');
 
 router.use(auth('admin'));
+
+// GET /api/admin/servicos -> estado técnico observado pela própria API.
+router.get('/servicos', a(async (req, res) => {
+  const io = req.app.get('io');
+  const mongoLigado = mongoose.connection.readyState === 1;
+  const armazenamentoCloud = Boolean(process.env.STORAGE_CONN);
+
+  res.json([
+    { id: 'api', nome: 'API REST', operacional: true, detalhe: 'Node.js e Express' },
+    {
+      id: 'socket',
+      nome: 'Servidor de sockets',
+      operacional: Boolean(io),
+      detalhe: io ? `${io.engine.clientsCount} ligações ativas` : 'Socket.IO indisponível'
+    },
+    {
+      id: 'mongo',
+      nome: 'MongoDB',
+      operacional: mongoLigado,
+      detalhe: mongoLigado ? 'Base de dados ligada' : 'Sem ligação à base de dados'
+    },
+    {
+      id: 'imagens',
+      nome: 'Armazenamento de imagens',
+      operacional: true,
+      detalhe: armazenamentoCloud ? 'Azure Blob Storage configurado' : 'Armazenamento local de desenvolvimento'
+    },
+    { id: 'swagger', nome: 'Documentação da API', operacional: true, detalhe: 'Swagger UI em /api-docs' }
+  ]);
+}));
 
 // GET /api/admin/estatisticas  -> 200
 router.get('/estatisticas', a(async (req, res) => {
@@ -73,6 +106,48 @@ router.get('/utilizadores', a(async (req, res) => {
     .select('nome email papel produtor createdAt')
     .sort({ createdAt: -1 });
   res.json(utilizadores);
+}));
+
+// DELETE /api/admin/utilizadores/:id -> elimina apenas contas sem atividade associada.
+router.delete('/utilizadores/:id', a(async (req, res) => {
+  if (String(req.params.id) === String(req.user.id)) {
+    throw erro(409, 'Não pode eliminar a conta de administrador com sessão iniciada');
+  }
+
+  const utilizador = await User.findById(req.params.id).select('_id nome papel');
+  if (!utilizador) throw erro(404, 'Utilizador não encontrado');
+
+  const [produtos, encomendas, leiloes, licitacoes, avaliacoes] = await Promise.all([
+    Product.countDocuments({ produtor: utilizador._id }),
+    Order.countDocuments({
+      $or: [{ comprador: utilizador._id }, { produtor: utilizador._id }]
+    }),
+    Auction.countDocuments({
+      $or: [
+        { produtor: utilizador._id },
+        { 'licitacaoAtual.comprador': utilizador._id }
+      ]
+    }),
+    Bid.countDocuments({ comprador: utilizador._id }),
+    Review.countDocuments({
+      $or: [{ autor: utilizador._id }, { produtor: utilizador._id }]
+    })
+  ]);
+
+  const totalAssociacoes = produtos + encomendas + leiloes + licitacoes + avaliacoes;
+  if (totalAssociacoes > 0) {
+    throw erro(409, 'A conta tem produtos, encomendas, leilões, licitações ou avaliações associados e não pode ser eliminada');
+  }
+
+  await Promise.all([
+    Review.updateMany(
+      { denunciantes: utilizador._id },
+      { $pull: { denunciantes: utilizador._id } }
+    ),
+    User.deleteOne({ _id: utilizador._id })
+  ]);
+
+  res.status(204).end();
 }));
 
 router.get('/encomendas', a(async (req, res) => {

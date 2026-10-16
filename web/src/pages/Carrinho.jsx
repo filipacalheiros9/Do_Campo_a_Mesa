@@ -83,14 +83,14 @@ export default function Carrinho() {
 
   return (
     <>
-      <div className="d-flex justify-content-between align-items-center gap-3 mb-3">
+      <header className="destaque d-flex justify-content-between align-items-center gap-3 mb-4">
         <h1 className="mb-0">Carrinho</h1>
         {linhas.length > 0 && (
           <button type="button" className="btn btn-sm btn-outline-danger" onClick={esvaziar}>
             Esvaziar carrinho
           </button>
         )}
-      </div>
+      </header>
 
       {linhas.length === 0 ? <p>O carrinho está vazio.</p> : (
         gruposPorProdutor.map((grupo) => (

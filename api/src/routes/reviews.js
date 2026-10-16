@@ -43,6 +43,15 @@ router.post('/', auth('comprador'), a(async (req, res) => {
     comentario: typeof comentario === 'string' ? comentario.trim() : undefined
   });
 
+  const io = req.app.get('io');
+  if (io) {
+    io.to(`user:${encomenda.produtor}`).emit('nova-avaliacao', {
+      id: avaliacao._id,
+      classificacao: avaliacao.classificacao,
+      produto: produtoId || null
+    });
+  }
+
   res.location(`/api/reviews/${avaliacao.id}`).status(201).json(avaliacao);
 }));
 

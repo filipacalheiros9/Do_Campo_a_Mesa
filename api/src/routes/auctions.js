@@ -65,11 +65,19 @@ router.post('/', auth('produtor'), produtorValidado, a(async (req, res) => {
   }
 
   let produto;
+  let quantidadeStock;
   if (produtoId) {
     produto = await Product.findById(produtoId);
     if (!produto) throw erro(404, 'Produto não encontrado');
     if (produto.produtor.toString() !== String(req.user.id)) {
       throw erro(403, 'Só pode criar leilões para os seus produtos');
+    }
+    quantidadeStock = Number(quantidade);
+    if (!Number.isInteger(quantidadeStock) || quantidadeStock < 1) {
+      throw erro(400, 'A quantidade do lote deve ser um número inteiro positivo');
+    }
+    if (quantidadeStock > produto.stock) {
+      throw erro(409, `Stock insuficiente: existem ${produto.stock} ${produto.unidade}`);
     }
   }
 
@@ -79,7 +87,10 @@ router.post('/', auth('produtor'), produtorValidado, a(async (req, res) => {
     produto: produto?._id,
     lote: lote.trim(),
     descricao: typeof descricao === 'string' ? descricao.trim() : undefined,
-    quantidade,
+    quantidade: produto
+      ? `${quantidadeStock} ${produto.unidade}`
+      : (quantidade ? String(quantidade).trim() : undefined),
+    quantidadeStock,
     precoBase: Number(precoBase),
     incremento: Number(incremento),
     licitacaoAtual: { valor: Number(precoBase) },

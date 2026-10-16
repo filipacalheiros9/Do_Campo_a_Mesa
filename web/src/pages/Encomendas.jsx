@@ -25,7 +25,12 @@ export default function Encomendas() {
 
   return (
     <>
-      <h1 className="mb-4">Encomendas</h1>
+      <header className="destaque mb-4">
+        <h1>Encomendas</h1>
+        <p className="texto-secundario mb-0">
+          Consulte as suas encomendas e acompanhe o estado de cada entrega.
+        </p>
+      </header>
       {erro && <div className="alert alert-danger">{erro}</div>}
       {!encomendas.length && !erro && (
         <div className="alert alert-light border">Ainda não tem encomendas.</div>
