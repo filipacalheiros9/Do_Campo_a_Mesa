@@ -68,5 +68,13 @@ $cores-categoria: (
 .filtros {
   display: flex; flex-direction: column; gap: .75rem;
   @include a-partir-de(md) { gap: 1rem; }
-  @include a-partir-de(lg) { flex-direction: row; align-items: center; }
+  @include a-partir-de(lg) {
+    flex-flow: row wrap;
+    align-items: center;
+
+    > #pesquisa { flex: 1 1 18rem; }
+    > .d-flex { flex: 1 1 100%; }
+    > .form-select,
+    > .form-control:not(#pesquisa) { flex: 1 1 11rem; width: auto; }
+  }
 }

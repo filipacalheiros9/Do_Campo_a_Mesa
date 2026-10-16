@@ -135,6 +135,56 @@ paths:
               schema:
                 type: array
                 items: { $ref: '#/components/schemas/Utilizador' }
+  /producers/me:
+    patch:
+      operationId: atualizarPerfilProdutor
+      tags: [Produtores]
+      summary: Atualizar a página pública do produtor autenticado
+      security: [ { bearerAuth: [] } ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                nomeExploracao: { type: string, maxLength: 100, example: Horta da Ribeira }
+                descricao: { type: string, maxLength: 1000 }
+                localidade: { type: string, maxLength: 100, example: Ponte de Lima }
+                localizacao:
+                  type: object
+                  properties:
+                    lat: { type: number, minimum: -90, maximum: 90, example: 41.7676 }
+                    lng: { type: number, minimum: -180, maximum: 180, example: -8.5833 }
+      responses:
+        '200':
+          description: Perfil atualizado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Utilizador' }
+        '400': { $ref: '#/components/responses/PedidoInvalido' }
+        '401': { $ref: '#/components/responses/NaoAutorizado' }
+        '403': { $ref: '#/components/responses/Proibido' }
+  /producers/me/estatisticas:
+    get:
+      operationId: obterEstatisticasProdutor
+      tags: [Produtores]
+      summary: Consultar indicadores do produtor autenticado
+      security: [ { bearerAuth: [] } ]
+      responses:
+        '200':
+          description: Indicadores do produtor
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  produtos: { type: integer, minimum: 0 }
+                  encomendas: { type: integer, minimum: 0 }
+                  leiloes: { type: integer, minimum: 0 }
+                  totalVendas: { type: number, minimum: 0 }
+        '401': { $ref: '#/components/responses/NaoAutorizado' }
+        '403': { $ref: '#/components/responses/Proibido' }
   /producers/{id}:
     parameters:
       - $ref: '#/components/parameters/Id'
@@ -163,6 +213,7 @@ paths:
         - { name: bio, in: query, required: false, description: Quando true devolve apenas produtos biológicos, schema: { type: boolean, example: true } }
         - { name: epoca, in: query, required: false, description: Época em que o produto está disponível, schema: { type: string, enum: [Primavera, Verão, Outono, Inverno], example: Outono } }
         - $ref: '#/components/parameters/ProdutorQuery'
+        - { name: localidade, in: query, required: false, description: Texto parcial da localidade do produtor, schema: { type: string, example: Ponte de Lima } }
         - { name: ordenar, in: query, required: false, description: Ordenação dos resultados, schema: { type: string, enum: [recentes, preco_asc, preco_desc, nome], default: recentes } }
       responses:
         '200':
@@ -369,6 +420,7 @@ paths:
       summary: Listar leilões
       parameters:
         - { name: estado, in: query, required: false, description: Estado atual do leilão, schema: { type: string, enum: [agendado, ativo, terminado], example: ativo } }
+        - $ref: '#/components/parameters/ProdutorQuery'
       responses:
         '200':
           description: Lista de leilões
@@ -603,6 +655,48 @@ paths:
         '401': { $ref: '#/components/responses/NaoAutorizado' }
         '403': { $ref: '#/components/responses/Proibido' }
         '404': { $ref: '#/components/responses/NaoEncontrado' }
+  /admin/utilizadores:
+    get:
+      operationId: listarUtilizadoresAdmin
+      tags: [Administração]
+      summary: Listar todos os utilizadores
+      security: [ { bearerAuth: [] } ]
+      responses:
+        '200':
+          description: Lista global de utilizadores
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: '#/components/schemas/Utilizador' } }
+        '401': { $ref: '#/components/responses/NaoAutorizado' }
+        '403': { $ref: '#/components/responses/Proibido' }
+  /admin/encomendas:
+    get:
+      operationId: listarEncomendasAdmin
+      tags: [Administração]
+      summary: Listar as encomendas da plataforma
+      security: [ { bearerAuth: [] } ]
+      responses:
+        '200':
+          description: Lista global de encomendas
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: '#/components/schemas/Encomenda' } }
+        '401': { $ref: '#/components/responses/NaoAutorizado' }
+        '403': { $ref: '#/components/responses/Proibido' }
+  /admin/leiloes:
+    get:
+      operationId: listarLeiloesAdmin
+      tags: [Administração]
+      summary: Listar os leilões da plataforma
+      security: [ { bearerAuth: [] } ]
+      responses:
+        '200':
+          description: Lista global de leilões
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: '#/components/schemas/Leilao' } }
+        '401': { $ref: '#/components/responses/NaoAutorizado' }
+        '403': { $ref: '#/components/responses/Proibido' }
 components:
   securitySchemes:
     bearerAuth:

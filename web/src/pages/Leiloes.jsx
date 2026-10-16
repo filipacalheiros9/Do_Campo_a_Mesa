@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { api } from '../api/client.js';
+import { api, urlFicheiro } from '../api/client.js';
 import { useAuth } from '../context/AuthContext.jsx';
 
 const euros = new Intl.NumberFormat('pt-PT', { style: 'currency', currency: 'EUR' });
@@ -68,7 +68,7 @@ export default function Leiloes() {
           return (
             <article key={leilao._id} className="card cartao-leilao h-100">
               {leilao.produto?.imagemUrl ? (
-                <img className="cartao-leilao__foto" src={leilao.produto.imagemUrl}
+                <img className="cartao-leilao__foto" src={urlFicheiro(leilao.produto.imagemUrl)}
                   alt={leilao.lote} loading="lazy" />
               ) : (
                 <div className="cartao-leilao__imagem" aria-hidden="true">⚒</div>

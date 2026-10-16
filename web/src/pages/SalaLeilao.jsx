@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
+import { urlFicheiro } from '../api/client.js';
 import { useLeilao } from '../hooks/useLeilao.js';
 import { formatarTempo, useContagem } from '../hooks/useContagem.js';
 
@@ -48,7 +49,7 @@ export default function SalaLeilao() {
     <div className="sala-leilao">
       <section className="card overflow-hidden">
         {leilao.produto?.imagemUrl && (
-          <img className="sala-leilao__foto" src={leilao.produto.imagemUrl} alt={leilao.lote} />
+          <img className="sala-leilao__foto" src={urlFicheiro(leilao.produto.imagemUrl)} alt={leilao.lote} />
         )}
 
         <div className="card-body p-4">

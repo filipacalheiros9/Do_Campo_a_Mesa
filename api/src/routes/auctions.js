@@ -15,6 +15,7 @@ router.get('/', a(async (req, res) => {
     if (!Auction.ESTADOS.includes(req.query.estado)) throw erro(400, 'Estado de leilão inválido');
     filtro.estado = req.query.estado;
   }
+  if (req.query.produtor) filtro.produtor = req.query.produtor;
 
   const leiloes = await Auction.find(filtro)
     .sort({ iniciaEm: 1 })

@@ -1,5 +1,6 @@
 // Comprador: acompanhamento das encomendas com atualização em tempo real.
 import EstadoEncomenda from '../components/EstadoEncomenda.jsx';
+import FormularioAvaliacao from '../components/FormularioAvaliacao.jsx';
 import { useEventoSocket } from '../context/SocketContext.jsx';
 import { useApi } from '../hooks/useApi.js';
 
@@ -58,6 +59,19 @@ export default function Encomendas() {
                 </li>
               ))}
             </ul>
+            {encomenda.estado === 'entregue' && (
+              <details className="mt-3">
+                <summary className="fw-semibold">Avaliar esta encomenda</summary>
+                <div className="mt-3">
+                  <FormularioAvaliacao encomendaId={encomenda._id}
+                    titulo={`Avaliar ${nomeProdutor}`} />
+                  {encomenda.linhas.filter((linha) => linha.produto).map((linha) => (
+                    <FormularioAvaliacao key={linha.produto} encomendaId={encomenda._id}
+                      produto={linha.produto} titulo={`Avaliar ${linha.nome}`} />
+                  ))}
+                </div>
+              </details>
+            )}
           </article>
         );
       })}

@@ -2,6 +2,7 @@
 const router = require('express').Router();
 const multer = require('multer');
 const Product = require('../models/Product');
+const User = require('../models/User');
 const auth = require('../middleware/auth');
 const produtorValidado = require('../middleware/produtorValidado');
 const a = require('../utils/async');
@@ -38,7 +39,7 @@ const escaparRegex = (texto) => texto.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 // GET /api/products?q=&categoria=&precoMin=&precoMax=&bio=&epoca=&produtor=&ordenar=
 router.get('/', a(async (req, res) => {
-  const { q, categoria, precoMin, precoMax, bio, epoca, produtor, ordenar } = req.query;
+  const { q, categoria, precoMin, precoMax, bio, epoca, produtor, localidade, ordenar } = req.query;
   const filtro = {};
 
   if (q) filtro.nome = { $regex: escaparRegex(String(q).trim()), $options: 'i' };
@@ -61,8 +62,24 @@ router.get('/', a(async (req, res) => {
   }
 
   if (bio === 'true') filtro.biologico = true;
+  if (bio === 'false') filtro.biologico = false;
   if (epoca) filtro.epocas = { $in: [epoca] };
-  if (produtor) filtro.produtor = produtor;
+  if (localidade) {
+    const filtroProdutores = {
+      papel: 'produtor',
+      'produtor.validado': true,
+      'produtor.localidade': {
+        $regex: escaparRegex(String(localidade).trim()),
+        $options: 'i'
+      }
+    };
+    if (produtor) filtroProdutores._id = produtor;
+
+    const produtores = await User.find(filtroProdutores).select('_id');
+    filtro.produtor = { $in: produtores.map((item) => item._id) };
+  } else if (produtor) {
+    filtro.produtor = produtor;
+  }
 
   const lista = await Product.find(filtro)
     .sort(ORDENACAO[ordenar] || ORDENACAO.recentes)

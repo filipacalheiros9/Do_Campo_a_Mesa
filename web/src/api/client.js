@@ -1,6 +1,7 @@
 // Cliente HTTP da API: junta o URL base e o token JWT a cada pedido.
 export const API_URL = (import.meta.env.VITE_API_URL || 'http://localhost:3000').replace(/\/$/, '');
 export const USAR_DADOS_SIMULADOS = import.meta.env.VITE_USAR_DADOS_SIMULADOS === 'true';
+export const urlFicheiro = (url) => (url?.startsWith('/') ? `${API_URL}${url}` : url);
 
 // Preserva o código HTTP para a interface poder distinguir cada tipo de erro.
 export class ErroApi extends Error {

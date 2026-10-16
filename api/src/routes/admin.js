@@ -67,6 +67,32 @@ router.get('/reviews/denunciadas', a(async (req, res) => {
   res.json(avaliacoes);
 }));
 
+// Listas globais consumidas pelo backoffice Laravel.
+router.get('/utilizadores', a(async (req, res) => {
+  const utilizadores = await User.find()
+    .select('nome email papel produtor createdAt')
+    .sort({ createdAt: -1 });
+  res.json(utilizadores);
+}));
+
+router.get('/encomendas', a(async (req, res) => {
+  const encomendas = await Order.find()
+    .sort({ createdAt: -1 })
+    .limit(100)
+    .populate('comprador', 'nome email')
+    .populate('produtor', 'nome produtor.nomeExploracao');
+  res.json(encomendas);
+}));
+
+router.get('/leiloes', a(async (req, res) => {
+  const leiloes = await Auction.find()
+    .sort({ createdAt: -1 })
+    .limit(100)
+    .populate('produtor', 'nome produtor.nomeExploracao')
+    .populate('produto', 'nome');
+  res.json(leiloes);
+}));
+
 // PATCH /api/admin/reviews/:id  { visivel: false }  -> 200
 router.patch('/reviews/:id', a(async (req, res) => {
   if (typeof req.body?.visivel !== 'boolean') {

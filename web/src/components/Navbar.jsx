@@ -2,6 +2,8 @@ import { Link, NavLink } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useCarrinho } from '../context/CarrinhoContext.jsx';
 
+const ADMIN_URL = import.meta.env.VITE_ADMIN_URL || 'http://localhost:8000';
+
 export default function Navbar() {
   const { utilizador, sair } = useAuth();
   const { totalArtigos } = useCarrinho();
@@ -25,10 +27,11 @@ export default function Navbar() {
               <>
                 <li className="nav-item"><NavLink to="/produtor" end className="nav-link">Painel</NavLink></li>
                 <li className="nav-item"><NavLink to="/produtor/produtos" className="nav-link">Produtos</NavLink></li>
+                <li className="nav-item"><NavLink to="/produtor/perfil" className="nav-link">Perfil público</NavLink></li>
               </>
             )}
             {utilizador?.papel === 'admin' && (
-              <li className="nav-item"><NavLink to="/admin" className="nav-link">Administração</NavLink></li>
+              <li className="nav-item"><a href={ADMIN_URL} className="nav-link">Administração</a></li>
             )}
           </ul>
           <div className="d-flex gap-2 align-items-center">
