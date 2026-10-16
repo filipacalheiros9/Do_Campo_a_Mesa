@@ -46,6 +46,14 @@ router.patch('/produtores/:id/validacao', a(async (req, res) => {
     { new: true, runValidators: true }
   ).select('nome email produtor');
   if (!produtor) throw erro(404, 'Produtor não encontrado');
+
+  const io = req.app.get('io');
+  if (io) {
+    io.to(`user:${produtor._id}`).emit('conta-validada', {
+      aprovado: req.body.aprovado
+    });
+  }
+
   res.json(produtor);
 }));
 

@@ -1,6 +1,7 @@
 // Passo 2: routing no cliente
 import { Routes, Route } from 'react-router-dom';
 import Navbar from './components/Navbar.jsx';
+import Notificacoes from './components/Notificacoes.jsx';
 import RotaProtegida from './components/RotaProtegida.jsx';
 import Catalogo from './pages/Catalogo.jsx';
 import Produtor from './pages/Produtor.jsx';
@@ -21,6 +22,7 @@ export default function App() {
     <>
       <a className="btn btn-light saltar-conteudo" href="#conteudo">Saltar para o conteúdo</a>
       <Navbar />
+      <Notificacoes />
       <main id="conteudo" className="container-xl py-4" tabIndex="-1">
         <Routes>
           {/* Visitante */}

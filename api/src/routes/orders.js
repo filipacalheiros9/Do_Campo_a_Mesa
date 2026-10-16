@@ -98,6 +98,15 @@ router.post('/', auth('comprador'), a(async (req, res) => {
       entrega
     });
 
+    const io = req.app.get('io');
+    if (io) {
+      io.to(`user:${encomenda.produtor}`).emit('nova-encomenda', {
+        id: encomenda._id,
+        total: encomenda.total,
+        comprador: req.user.nome
+      });
+    }
+
     // Location permite ao cliente saber o endereço do recurso acabado de criar.
     res.location(`/api/orders/${encomenda.id}`).status(201).json(encomenda);
   } catch (err) {
@@ -185,7 +194,8 @@ router.patch('/:id/estado', auth('produtor'), a(async (req, res) => {
     const compradorId = atualizada.comprador?._id || atualizada.comprador;
     io.to(`user:${compradorId}`).emit('encomenda-atualizada', {
       id: atualizada._id,
-      estado: atualizada.estado
+      estado: atualizada.estado,
+      produtor: atualizada.produtor?.nome
     });
   }
 

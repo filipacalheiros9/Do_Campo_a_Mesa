@@ -6,7 +6,12 @@ const ESTADOS = ['pendente', 'confirmada', 'pronta', 'entregue'];
 
 // Cada linha é guardada dentro da encomenda e conserva os dados comerciais da compra.
 const linhaSchema = new Schema({
-  produto: { type: Types.ObjectId, ref: 'Product', required: true },
+  produto: {
+    type: Types.ObjectId,
+    ref: 'Product',
+    // Um lote criado sem produto continua a poder originar uma encomenda de leilão.
+    required() { return this.ownerDocument()?.origem !== 'leilao'; }
+  },
   nome: { type: String, required: true, trim: true },
   precoUnit: { type: Number, required: true, min: 0 },
   unidade: { type: String, required: true, trim: true },
@@ -68,6 +73,7 @@ orderSchema.statics.ESTADOS = ESTADOS;
 
 orderSchema.index({ comprador: 1, createdAt: -1 });
 orderSchema.index({ produtor: 1, createdAt: -1 });
-orderSchema.index({ leilao: 1 }, { sparse: true });
+// Um leilão só pode originar uma encomenda, mesmo com várias instâncias da API.
+orderSchema.index({ leilao: 1 }, { unique: true, sparse: true });
 
 module.exports = model('Order', orderSchema);

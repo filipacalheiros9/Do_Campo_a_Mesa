@@ -5,8 +5,11 @@ const registarLeiloes = require('./leiloes');
 module.exports = (io) => {
   io.use((socket, next) => {
     try {
-      const { token } = socket.handshake.auth;
-      socket.user = jwt.verify(token, process.env.JWT_SECRET);
+      const token = socket.handshake.auth?.token;
+      const { id, papel, nome } = jwt.verify(token, process.env.JWT_SECRET);
+      if (!id || !papel || !nome) throw new Error('Token incompleto');
+
+      socket.user = { id, papel, nome };
       next();
     } catch {
       next(new Error('não autorizado'));

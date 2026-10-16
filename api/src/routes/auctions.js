@@ -8,23 +8,8 @@ const produtorValidado = require('../middleware/produtorValidado');
 const a = require('../utils/async');
 const erro = require('../utils/erro');
 
-async function atualizarEstados() {
-  const agora = new Date();
-  await Promise.all([
-    Auction.updateMany(
-      { estado: 'agendado', iniciaEm: { $lte: agora }, terminaEm: { $gt: agora } },
-      { $set: { estado: 'ativo' } }
-    ),
-    Auction.updateMany(
-      { estado: { $in: ['agendado', 'ativo'] }, terminaEm: { $lt: agora } },
-      { $set: { estado: 'terminado' } }
-    )
-  ]);
-}
-
 // GET /api/auctions?estado=ativo  -> 200 [leilões]
 router.get('/', a(async (req, res) => {
-  await atualizarEstados();
   const filtro = {};
   if (req.query.estado) {
     if (!Auction.ESTADOS.includes(req.query.estado)) throw erro(400, 'Estado de leilão inválido');
@@ -40,7 +25,6 @@ router.get('/', a(async (req, res) => {
 
 // GET /api/auctions/:id  -> 200 leilão + últimas licitações
 router.get('/:id', a(async (req, res) => {
-  await atualizarEstados();
   const leilao = await Auction.findById(req.params.id)
     .populate('produtor', 'nome produtor.nomeExploracao produtor.localidade')
     .populate('produto', 'nome unidade imagemUrl')
