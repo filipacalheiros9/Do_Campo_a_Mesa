@@ -28,6 +28,15 @@ function IconeNavegacao({ tipo }) {
   );
 }
 
+function FolhaMarca() {
+  return (
+    <svg className="marca__folha" viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M4 13C7 6 13 4 20 4c-1 8-5 14-12 14-3 0-5-2-4-5Z" />
+      <path d="M6 17c3-4 7-7 12-11" />
+    </svg>
+  );
+}
+
 export default function Navbar() {
   const { utilizador, sair } = useAuth();
   const { totalArtigos } = useCarrinho();
@@ -74,7 +83,10 @@ export default function Navbar() {
   return (
     <header className="barra-topo">
       <nav className="navbar navbar-expand-lg container-xl" aria-label="Navegação principal">
-        <Link to="/" className="navbar-brand marca">Do Campo à Mesa</Link>
+        <Link to="/" className="navbar-brand marca">
+          <FolhaMarca />
+          <span>Do Campo à Mesa</span>
+        </Link>
         {utilizador && (
           <button type="button" className="btn btn-sm btn-outline-secondary d-lg-none ms-auto" onClick={sair}>Sair</button>
         )}

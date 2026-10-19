@@ -50,9 +50,16 @@ router.get('/me/estatisticas', auth('produtor'), a(async (req, res) => {
     Product.countDocuments({ produtor: req.user.id }),
     Order.countDocuments({ produtor: req.user.id }),
     Auction.countDocuments({ produtor: req.user.id }),
-    Order.find({ produtor: req.user.id, estado: 'entregue' }).select('total'),
-    Review.find({ produtor: req.user.id, visivel: { $ne: false } }).select('classificacao'),
-    Product.find({ produtor: req.user.id, stock: { $lte: 5 } })
+    // O total é virtual e depende das linhas da encomenda.
+    Order.find({ produtor: req.user.id, estado: 'entregue' }).select('linhas'),
+    Review.find({
+      produtor: req.user.id,
+      $or: [
+        { visivel: { $ne: false } },
+        { estadoModeracao: 'pendente' }
+      ]
+    }).select('classificacao'),
+    Product.find({ produtor: req.user.id, stock: { $lte: 10 } })
       .select('nome stock unidade imagemUrl')
       .sort({ stock: 1, nome: 1 })
   ]);
@@ -116,7 +123,15 @@ router.get('/:id', a(async (req, res) => {
   const [produtos, resumo] = await Promise.all([
     Product.find({ produtor: produtor._id }).sort({ nome: 1 }),
     Review.aggregate([
-      { $match: { produtor: produtor._id, visivel: true } },
+      {
+        $match: {
+          produtor: produtor._id,
+          $or: [
+            { visivel: { $ne: false } },
+            { estadoModeracao: 'pendente' }
+          ]
+        }
+      },
       { $group: { _id: null, media: { $avg: '$classificacao' }, total: { $sum: 1 } } }
     ])
   ]);

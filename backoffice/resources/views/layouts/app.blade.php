@@ -8,7 +8,13 @@
 </head>
 <body>
     <header class="topo">
-        <a href="{{ route('painel') }}" class="marca">Do Campo à Mesa · Administração</a>
+        <a href="{{ route('painel') }}" class="marca">
+            <svg class="marca-folha" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M4 13C7 6 13 4 20 4c-1 8-5 14-12 14-3 0-5-2-4-5Z" />
+                <path d="M6 17c3-4 7-7 12-11" />
+            </svg>
+            <span>Do Campo à Mesa · Administração</span>
+        </a>
         @if(session('token'))
             @php
                 $nomeAdministrador = session('utilizador.nome', 'Administrador');

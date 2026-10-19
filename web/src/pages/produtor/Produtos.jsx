@@ -148,8 +148,8 @@ export default function ProdutosProdutor() {
                 <p>{Number(produto.preco).toLocaleString('pt-PT', { style: 'currency', currency: 'EUR' })} / {produto.unidade}</p>
                 <p className={produto.stock <= 5 ? 'text-danger fw-semibold' : ''}>Stock: {produto.stock}</p>
                 <div className="d-flex gap-2">
-                  <button className="btn btn-sm btn-outline-success" type="button" onClick={() => editar(produto)}>Editar</button>
-                  <button className="btn btn-sm btn-outline-danger" type="button" onClick={() => eliminar(produto)}>Eliminar</button>
+                  <button className="btn btn-sm btn-success" type="button" onClick={() => editar(produto)}>Editar</button>
+                  <button className="btn btn-sm btn-danger" type="button" onClick={() => eliminar(produto)}>Eliminar</button>
                 </div>
               </div>
             </article>

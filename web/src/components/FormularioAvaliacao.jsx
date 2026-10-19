@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { api } from '../api/client.js';
 import { useAuth } from '../context/AuthContext.jsx';
 
-export default function FormularioAvaliacao({ encomendaId, produto, titulo }) {
+export default function FormularioAvaliacao({ encomendaId, produto, titulo, aoRegistar }) {
   const { token } = useAuth();
   const [dados, setDados] = useState({ classificacao: 5, comentario: '' });
   const [mensagem, setMensagem] = useState('');
@@ -25,6 +25,7 @@ export default function FormularioAvaliacao({ encomendaId, produto, titulo }) {
         }
       });
       setMensagem('Avaliação registada. Obrigado!');
+      aoRegistar?.();
     } catch (err) {
       setErro(err.message);
     } finally {

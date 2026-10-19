@@ -16,15 +16,22 @@ const reviewSchema = new Schema({
     validate: { validator: Number.isInteger, message: 'A classificação deve ser um número inteiro' }
   },
   comentario: { type: String, trim: true, maxlength: 1000 },
+  estadoModeracao: {
+    type: String,
+    enum: ['pendente', 'aprovada', 'recusada'],
+    default: 'aprovada',
+    required: true
+  },
   denuncias: { type: Number, default: 0, min: 0 },
   denunciantes: { type: [{ type: Types.ObjectId, ref: 'User' }], default: [] },
   visivel: { type: Boolean, default: true }
 }, { timestamps: true });
 
-// Um comprador só pode avaliar uma vez o mesmo produto na mesma encomenda.
+// Um comprador só pode avaliar uma vez o mesmo alvo dentro da mesma encomenda.
 reviewSchema.index({ autor: 1, encomenda: 1, produto: 1 }, { unique: true });
 reviewSchema.index({ produtor: 1, visivel: 1, createdAt: -1 });
 reviewSchema.index({ produto: 1, visivel: 1, createdAt: -1 });
+reviewSchema.index({ estadoModeracao: 1, createdAt: 1 });
 reviewSchema.index({ denuncias: -1, createdAt: -1 });
 
 module.exports = model('Review', reviewSchema);

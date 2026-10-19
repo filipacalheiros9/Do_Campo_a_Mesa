@@ -32,7 +32,11 @@ router.post('/', auth('comprador'), a(async (req, res) => {
     encomenda: encomenda._id,
     produto: produtoId || null
   });
-  if (duplicada) throw erro(409, 'Esta avaliação já foi registada');
+  if (duplicada) {
+    throw erro(409, produtoId
+      ? 'Já avaliou este produto nesta encomenda'
+      : 'Já avaliou o produtor nesta encomenda');
+  }
 
   const avaliacao = await Review.create({
     autor: req.user.id,
@@ -40,25 +44,29 @@ router.post('/', auth('comprador'), a(async (req, res) => {
     produto: produtoId || undefined,
     encomenda: encomenda._id,
     classificacao,
-    comentario: typeof comentario === 'string' ? comentario.trim() : undefined
+    comentario: typeof comentario === 'string' ? comentario.trim() : undefined,
+    estadoModeracao: 'aprovada',
+    visivel: true
   });
 
-  const io = req.app.get('io');
-  if (io) {
-    io.to(`user:${encomenda.produtor}`).emit('nova-avaliacao', {
-      id: avaliacao._id,
-      classificacao: avaliacao.classificacao,
-      produto: produtoId || null
-    });
-  }
+  req.app.get('io')?.to(`user:${encomenda.produtor}`).emit('nova-avaliacao', {
+    id: avaliacao._id,
+    classificacao: avaliacao.classificacao,
+    produto: avaliacao.produto || null
+  });
 
   res.location(`/api/reviews/${avaliacao.id}`).status(201).json(avaliacao);
 }));
 
 // GET /api/reviews?produtor=&produto=  -> 200 [avaliações visíveis]
 router.get('/', a(async (req, res) => {
-  // Inclui avaliações visíveis e documentos antigos sem o campo; exclui apenas visivel=false.
-  const filtro = { visivel: { $ne: false } };
+  // Avaliações antigas que ficaram pendentes também são publicadas automaticamente.
+  const filtro = {
+    $or: [
+      { visivel: { $ne: false } },
+      { estadoModeracao: 'pendente' }
+    ]
+  };
   if (req.query.produtor) filtro.produtor = req.query.produtor;
   if (req.query.produto) filtro.produto = req.query.produto;
 
@@ -73,7 +81,8 @@ router.get('/', a(async (req, res) => {
 // POST /api/reviews/:id/denuncia  -> 204
 router.post('/:id/denuncia', auth(), a(async (req, res) => {
   const avaliacao = await Review.findById(req.params.id);
-  if (!avaliacao || !avaliacao.visivel) throw erro(404, 'Avaliação não encontrada');
+  const estaOculta = avaliacao?.visivel === false && avaliacao?.estadoModeracao !== 'pendente';
+  if (!avaliacao || estaOculta) throw erro(404, 'Avaliação não encontrada');
 
   // A denúncia é idempotente: o mesmo utilizador não aumenta o contador várias vezes.
   if (!avaliacao.denunciantes.some((id) => id.toString() === String(req.user.id))) {

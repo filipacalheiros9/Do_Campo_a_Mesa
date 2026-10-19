@@ -86,7 +86,7 @@ export default function Carrinho() {
       <header className="destaque d-flex justify-content-between align-items-center gap-3 mb-4">
         <h1 className="mb-0">Carrinho</h1>
         {linhas.length > 0 && (
-          <button type="button" className="btn btn-sm btn-outline-danger" onClick={esvaziar}>
+          <button type="button" className="btn btn-sm btn-danger" onClick={esvaziar}>
             Esvaziar carrinho
           </button>
         )}
@@ -116,9 +116,9 @@ export default function Carrinho() {
                         value={quantidade}
                         onChange={(e) => alterarQuantidade(produto._id, e.target.value)} />
                       <span className="fw-semibold text-nowrap">{euro(produto.preco * quantidade)}</span>
-                      <button type="button" className="btn btn-sm btn-outline-danger"
+                      <button type="button" className="btn btn-sm btn-danger"
                         onClick={() => remover(produto._id)}>
-                        Remover
+                        Eliminar
                       </button>
                     </div>
                   </div>

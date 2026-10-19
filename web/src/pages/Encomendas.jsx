@@ -39,6 +39,11 @@ export default function Encomendas() {
       {encomendas.map((encomenda) => {
         const produtor = encomenda.produtor;
         const nomeProdutor = produtor?.produtor?.nomeExploracao || produtor?.nome || 'Produtor';
+        const produtosAvaliados = new Set(encomenda.avaliacoes?.produtos || []);
+        const linhasPorAvaliar = encomenda.linhas.filter((linha) => (
+          linha.produto && !produtosAvaliados.has(String(linha.produto))
+        ));
+        const temAvaliacoesPorFazer = !encomenda.avaliacoes?.produtor || linhasPorAvaliar.length > 0;
         return (
           <article key={encomenda._id} className="card p-3 mb-3">
             <div className="d-flex justify-content-between flex-wrap gap-2 mb-3">
@@ -64,18 +69,23 @@ export default function Encomendas() {
                 </li>
               ))}
             </ul>
-            {encomenda.estado === 'entregue' && (
+            {encomenda.estado === 'entregue' && temAvaliacoesPorFazer && (
               <details className="mt-3">
                 <summary className="fw-semibold">Avaliar esta encomenda</summary>
                 <div className="mt-3">
-                  <FormularioAvaliacao encomendaId={encomenda._id}
-                    titulo={`Avaliar ${nomeProdutor}`} />
-                  {encomenda.linhas.filter((linha) => linha.produto).map((linha) => (
+                  {!encomenda.avaliacoes?.produtor && (
+                    <FormularioAvaliacao encomendaId={encomenda._id}
+                      titulo={`Avaliar ${nomeProdutor}`} aoRegistar={recarregar} />
+                  )}
+                  {linhasPorAvaliar.map((linha) => (
                     <FormularioAvaliacao key={linha.produto} encomendaId={encomenda._id}
-                      produto={linha.produto} titulo={`Avaliar ${linha.nome}`} />
+                      produto={linha.produto} titulo={`Avaliar ${linha.nome}`} aoRegistar={recarregar} />
                   ))}
                 </div>
               </details>
+            )}
+            {encomenda.estado === 'entregue' && !temAvaliacoesPorFazer && (
+              <p className="texto-secundario small mt-3 mb-0">Esta encomenda e os respetivos produtos já foram avaliados.</p>
             )}
           </article>
         );

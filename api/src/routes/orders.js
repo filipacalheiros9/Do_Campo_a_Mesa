@@ -3,6 +3,7 @@ const router = require('express').Router();
 const { isValidObjectId } = require('mongoose');
 const Order = require('../models/Order');
 const Product = require('../models/Product');
+const Review = require('../models/Review');
 const auth = require('../middleware/auth');
 const a = require('../utils/async');
 const erro = require('../utils/erro');
@@ -133,7 +134,32 @@ router.get('/', auth('comprador', 'produtor'), a(async (req, res) => {
     .populate('comprador', 'nome email')
     .populate('produtor', 'nome produtor.nomeExploracao produtor.localidade');
 
-  res.json(encomendas);
+  if (req.user.papel !== 'comprador') return res.json(encomendas);
+
+  const avaliacoes = await Review.find({ autor: req.user.id }).select('encomenda produto');
+  const avaliacoesPorEncomenda = new Map();
+  avaliacoes.forEach((avaliacao) => {
+    const encomendaId = String(avaliacao.encomenda);
+    const estado = avaliacoesPorEncomenda.get(encomendaId) || {
+      produtor: false,
+      produtos: new Set()
+    };
+    if (avaliacao.produto) estado.produtos.add(String(avaliacao.produto));
+    else estado.produtor = true;
+    avaliacoesPorEncomenda.set(encomendaId, estado);
+  });
+
+  res.json(encomendas.map((encomenda) => {
+    const dados = encomenda.toObject({ virtuals: true });
+    const estadoAvaliacoes = avaliacoesPorEncomenda.get(String(encomenda._id));
+    return {
+      ...dados,
+      avaliacoes: {
+        produtor: estadoAvaliacoes?.produtor || false,
+        produtos: [...(estadoAvaliacoes?.produtos || [])]
+      }
+    };
+  }));
 }));
 
 // GET /api/orders/:id  -> 200 | 404

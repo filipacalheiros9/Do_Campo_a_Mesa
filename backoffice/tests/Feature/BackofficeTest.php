@@ -65,13 +65,14 @@ class BackofficeTest extends TestCase
                 'utilizadores' => 1, 'produtores' => 0, 'encomendasHoje' => 0, 'leiloesAtivos' => 0,
             ]),
             '*/api/admin/produtores/pendentes' => Http::response([]),
-            '*/api/admin/reviews/denunciadas' => Http::response([]),
+            '*/api/admin/reviews/moderacao' => Http::response([]),
             '*/api/admin/utilizadores' => Http::response([[
                 '_id' => '1', 'nome' => '<script>alert(1)</script>', 'email' => 'teste@exemplo.pt',
                 'papel' => 'comprador', 'createdAt' => '2026-01-01T12:00:00Z',
             ]]),
             '*/api/admin/encomendas' => Http::response([]),
             '*/api/admin/leiloes' => Http::response([]),
+            '*/api/admin/servicos' => Http::response([]),
         ]);
 
         $resposta = $this->withSession([

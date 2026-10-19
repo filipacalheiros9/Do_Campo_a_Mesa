@@ -70,18 +70,23 @@
     @forelse($avaliacoes as $avaliacao)
         <article class="cartao linha">
             <div><strong>{{ $avaliacao['autor']['nome'] ?? 'Utilizador' }} · {{ $avaliacao['classificacao'] }}/5</strong>
-                <span>{{ $avaliacao['comentario'] ?? 'Sem comentário' }} · {{ $avaliacao['denuncias'] }} denúncia(s)</span></div>
+                <span>{{ $avaliacao['comentario'] ?? 'Sem comentário' }}</span>
+                <span>{{ $avaliacao['denuncias'] ?? 0 }} denúncia(s)</span></div>
             <div class="acoes">
                 <form method="post" action="{{ route('avaliacoes.moderar', $avaliacao['_id']) }}">@csrf @method('patch')
-                    <input type="hidden" name="visivel" value="0"><button class="perigo">Ocultar</button></form>
-                @if(!($avaliacao['visivel'] ?? true))
+                    <input type="hidden" name="estado" value="aprovada"><button class="primario">Manter</button></form>
                 <form method="post" action="{{ route('avaliacoes.moderar', $avaliacao['_id']) }}">@csrf @method('patch')
-                    <input type="hidden" name="visivel" value="1"><button>Repor</button></form>
-                @endif
+                    <input type="hidden" name="estado" value="recusada"><button class="perigo">Recusar</button></form>
             </div>
         </article>
     @empty <p class="secundario">Não existem avaliações denunciadas.</p> @endforelse
 </section>
+
+<section class="listagens-administracao" aria-labelledby="titulo-listagens">
+<div class="cabecalho-listagens">
+    <h2 id="titulo-listagens">Gestão da plataforma</h2>
+    <span class="secundario">Consulte os utilizadores, as encomendas e os leilões registados.</span>
+</div>
 
 <details open><summary>Utilizadores ({{ count($utilizadores) }})</summary>
 <div class="tabela"><table><thead><tr><th>Nome</th><th>Email</th><th>Papel</th><th>Registo</th><th>Ações</th></tr></thead><tbody>
@@ -107,6 +112,7 @@
 <div class="tabela"><table><thead><tr><th>Lote</th><th>Produtor</th><th>Estado</th><th>Licitações</th><th>Termina</th></tr></thead><tbody>
 @foreach($leiloes as $item)<tr><td>{{ $item['lote'] }}</td><td>{{ $item['produtor']['produtor']['nomeExploracao'] ?? ($item['produtor']['nome'] ?? '—') }}</td><td>{{ $item['estado'] }}</td><td>{{ $item['numLicitacoes'] }}</td><td>{{ \Carbon\Carbon::parse($item['terminaEm'])->format('d/m/Y H:i') }}</td></tr>@endforeach
 </tbody></table></div></details>
+</section>
 @endsection
 
 @push('scripts')

@@ -13,6 +13,13 @@ body {
     margin: 0;
 }
 
+button,
+input,
+select,
+textarea {
+    font: inherit;
+}
+
 .topo {
     min-height: 64px;
     padding: 0.8rem max(1rem, calc((100% - 1200px) / 2));
@@ -25,11 +32,25 @@ body {
 }
 
 .marca {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
     font-family: Georgia, serif;
     font-size: 1.25rem;
     font-weight: 700;
     color: #1f2a1e;
     text-decoration: none;
+}
+
+.marca-folha {
+    width: 1rem;
+    height: 1rem;
+    flex: 0 0 auto;
+    fill: none;
+    stroke: #2f5d3a;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 1.8;
 }
 
 .sessao,
@@ -88,7 +109,11 @@ body {
 }
 
 h1,
-h2 {
+h2,
+h3,
+h4,
+h5,
+h6 {
     font-family: Georgia, serif;
 }
 
@@ -271,8 +296,16 @@ button {
 }
 
 .perigo {
-    color: #a3281c;
+    background: #a3281c;
+    color: #fff;
     border-color: #a3281c;
+}
+
+.perigo:hover,
+.perigo:focus {
+    background: #7f1f16;
+    color: #fff;
+    border-color: #7f1f16;
 }
 
 .alerta {
@@ -288,6 +321,14 @@ button {
 .erro {
     background: #f4d8d4;
     color: #721c16;
+}
+
+.listagens-administracao {
+    margin-top: 2.5rem;
+}
+
+.cabecalho-listagens h2 {
+    margin: 0 0 0.35rem;
 }
 
 details {

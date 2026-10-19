@@ -155,14 +155,18 @@ async function seed() {
         produto: kiwi._id,
         encomenda: encomendaEntregue._id,
         classificacao: 5,
-        comentario: 'Produto fresco e pronto à hora combinada.'
+        comentario: 'Produto fresco e pronto à hora combinada.',
+        estadoModeracao: 'aprovada',
+        visivel: true
       },
       {
         autor: comprador._id,
         produtor: horta._id,
         encomenda: encomendaEntregue._id,
         classificacao: 5,
-        comentario: 'Atendimento muito atencioso.'
+        comentario: 'Atendimento muito atencioso.',
+        estadoModeracao: 'aprovada',
+        visivel: true
       }
     ]);
 

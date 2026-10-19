@@ -90,15 +90,19 @@ router.patch('/produtores/:id/validacao', a(async (req, res) => {
   res.json(produtor);
 }));
 
-// GET /api/admin/reviews/denunciadas  -> 200
-router.get('/reviews/denunciadas', a(async (req, res) => {
+// GET /api/admin/reviews/moderacao -> apenas avaliações denunciadas.
+const listarAvaliacoesParaModeracao = a(async (req, res) => {
   const avaliacoes = await Review.find({ denuncias: { $gt: 0 } })
-    .sort({ denuncias: -1, createdAt: -1 })
+    .sort({ denuncias: -1, createdAt: 1 })
     .populate('autor', 'nome email')
     .populate('produtor', 'nome produtor.nomeExploracao')
     .populate('produto', 'nome');
   res.json(avaliacoes);
-}));
+});
+
+router.get('/reviews/moderacao', listarAvaliacoesParaModeracao);
+// Mantém compatibilidade com versões anteriores do backoffice.
+router.get('/reviews/denunciadas', listarAvaliacoesParaModeracao);
 
 // Listas globais consumidas pelo backoffice Laravel.
 router.get('/utilizadores', a(async (req, res) => {
@@ -168,18 +172,26 @@ router.get('/leiloes', a(async (req, res) => {
   res.json(leiloes);
 }));
 
-// PATCH /api/admin/reviews/:id  { visivel: false }  -> 200
+// PATCH /api/admin/reviews/:id { estado: 'aprovada'|'recusada' } -> 200
 router.patch('/reviews/:id', a(async (req, res) => {
-  if (typeof req.body?.visivel !== 'boolean') {
-    throw erro(400, 'O campo visivel deve ser verdadeiro ou falso');
+  if (!['aprovada', 'recusada'].includes(req.body?.estado)) {
+    throw erro(400, 'O estado deve ser aprovada ou recusada');
   }
 
-  const avaliacao = await Review.findByIdAndUpdate(
-    req.params.id,
-    { $set: { visivel: req.body.visivel } },
+  const avaliacao = await Review.findOneAndUpdate(
+    { _id: req.params.id, denuncias: { $gt: 0 } },
+    {
+      $set: {
+        estadoModeracao: req.body.estado,
+        visivel: req.body.estado === 'aprovada',
+        denuncias: 0,
+        denunciantes: []
+      }
+    },
     { new: true, runValidators: true }
   );
-  if (!avaliacao) throw erro(404, 'Avaliação não encontrada');
+  if (!avaliacao) throw erro(404, 'Avaliação denunciada não encontrada');
+
   res.json(avaliacao);
 }));
 

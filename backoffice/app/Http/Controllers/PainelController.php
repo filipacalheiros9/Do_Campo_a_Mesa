@@ -20,7 +20,7 @@ class PainelController extends Controller
             return view('painel', [
                 'estatisticas' => $api->obter('/api/admin/estatisticas', $token),
                 'pendentes' => $api->obter('/api/admin/produtores/pendentes', $token),
-                'avaliacoes' => $api->obter('/api/admin/reviews/denunciadas', $token),
+                'avaliacoes' => $api->obter('/api/admin/reviews/moderacao', $token),
                 'utilizadores' => $api->obter('/api/admin/utilizadores', $token),
                 'encomendas' => $api->obter('/api/admin/encomendas', $token),
                 'leiloes' => $api->obter('/api/admin/leiloes', $token),
@@ -69,10 +69,12 @@ class PainelController extends Controller
 
     public function moderarAvaliacao(string $id, Request $request, ApiAdmin $api): RedirectResponse
     {
-        $dados = $request->validate(['visivel' => ['required', 'boolean']]);
-        $api->alterar("/api/admin/reviews/{$id}", ['visivel' => (bool) $dados['visivel']], $request->session()->get('token'));
+        $dados = $request->validate(['estado' => ['required', 'in:aprovada,recusada']]);
+        $api->alterar("/api/admin/reviews/{$id}", ['estado' => $dados['estado']], $request->session()->get('token'));
 
-        return back()->with('sucesso', 'Avaliação moderada.');
+        return back()->with('sucesso', $dados['estado'] === 'aprovada'
+            ? 'Avaliação mantida.'
+            : 'Avaliação recusada.');
     }
 
     public function eliminarUtilizador(string $id, Request $request, ApiAdmin $api): RedirectResponse

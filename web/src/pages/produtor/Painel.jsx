@@ -74,9 +74,9 @@ export default function PainelProdutor() {
         <div className="d-flex justify-content-between align-items-center gap-3 mb-3">
           <div>
             <h2 className="h4 mb-1" id="titulo-stock-baixo">Stock baixo</h2>
-            <p className="texto-secundario small mb-0">Produtos com cinco unidades ou menos.</p>
+            <p className="texto-secundario small mb-0">Produtos com dez unidades ou menos.</p>
           </div>
-          <Link to="/produtor/produtos" className="btn btn-sm btn-outline-secondary">Repor stock</Link>
+          <Link to="/produtor/produtos" className="btn btn-sm btn-success">Repor stock</Link>
         </div>
 
         {estatisticas?.stockBaixo?.length ? (
@@ -95,10 +95,7 @@ export default function PainelProdutor() {
       </section>
 
       <section className="mb-4">
-        <div className="d-flex justify-content-between align-items-center mb-2">
-          <h2 className="h4 mb-0">Leilões</h2>
-          <Link to="/produtor/leiloes/novo">Novo leilão</Link>
-        </div>
+        <h2 className="h4 mb-2">Leilões</h2>
         <div className="list-group">
           {(leiloes || []).map((leilao) => (
             <Link className="list-group-item list-group-item-action d-flex justify-content-between gap-3"
