@@ -284,14 +284,6 @@
   .atual { color: $terracota; font-weight: 700; }
 }
 
-.por-implementar {
-  border: 2px dashed $terracota;
-  border-radius: $border-radius;
-  padding: 1rem 1.25rem;
-  background: rgba($terracota, .06);
-  margin-bottom: 1rem;
-}
-
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     scroll-behavior: auto !important;

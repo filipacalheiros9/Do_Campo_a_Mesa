@@ -11,6 +11,7 @@ Este repositório contém a aplicação funcional: API REST, SPA para visitantes
 do-campo-a-mesa/
 ├── api/                      Node.js · Express · MongoDB · Socket.io
 │   ├── openapi.yaml          Passo 5: especificação OpenAPI (Swagger UI em /api-docs)
+│   ├── test/e2e.js           teste automático da API REST e do Socket.io
 │   └── src/
 │       ├── server.js         HTTP + Socket.io
 │       ├── app.js            Express: middleware, rotas, Swagger
@@ -92,6 +93,18 @@ Atenção: o seed **apaga** as coleções de utilizadores, produtos e leilões a
 | `http://localhost:3000/api-docs` | Swagger UI |
 | `GET /api/admin/estatisticas` sem token | `401` (o middleware de autenticação está ativo) |
 | `http://localhost:8000` | Login do backoffice Laravel |
+
+### Teste automático de ponta a ponta
+
+O teste requer MongoDB, a API ligada e os utilizadores criados pelo seed. Com a API a correr num terminal, execute noutro:
+
+```bash
+cd api
+npm run seed
+npm test
+```
+
+O teste usa a API REST e clientes Socket.io reais. Abrange autenticação, papéis, produtos, stock, encomendas, avaliações, moderação, notificações e duas licitações simultâneas com o mesmo valor. Os dados temporários criados pelo teste são removidos no final.
 
 ## Notas da implementação
 

@@ -148,6 +148,26 @@ async function seed() {
       { leilao: leilaoTerminado._id, comprador: restaurante._id, nome: restaurante.nome, valor: 130, createdAt: new Date(agora - minutos(100)) }
     ]);
 
+    // O leilão histórico já terminou antes do seed, por isso a respetiva venda
+    // também tem de existir. Sem esta associação, o ciclo tentaria concluí-lo
+    // novamente e reservar 100 kg do stock atual da abóbora.
+    const encomendaLeilao = await Order.create({
+      comprador: restaurante._id,
+      produtor: horta._id,
+      linhas: [{
+        produto: abobora._id,
+        nome: `Lote: ${leilaoTerminado.lote}`,
+        precoUnit: leilaoTerminado.licitacaoAtual.valor,
+        unidade: 'lote',
+        quantidade: 1
+      }],
+      estado: 'entregue',
+      origem: 'leilao',
+      leilao: leilaoTerminado._id
+    });
+    leilaoTerminado.encomenda = encomendaLeilao._id;
+    await leilaoTerminado.save();
+
     await Review.create([
       {
         autor: comprador._id,
@@ -173,7 +193,7 @@ async function seed() {
     console.log('Seed concluído:');
     console.log(`  ${[admin, horta, mel, comprador, restaurante].length} utilizadores`);
     console.log('  5 produtos');
-    console.log(`  ${[encomendaEntregue, encomendaPendente].length} encomendas`);
+    console.log(`  ${[encomendaEntregue, encomendaPendente, encomendaLeilao].length} encomendas`);
     console.log(`  ${[leilaoAtivo, leilaoAgendado, leilaoTerminado].length} leilões`);
     console.log('  5 licitações');
     console.log('  2 avaliações');
