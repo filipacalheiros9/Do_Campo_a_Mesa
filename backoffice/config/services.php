@@ -6,6 +6,10 @@ return [
         'url' => env('API_URL', 'http://localhost:3000'),
     ],
 
+    'spa' => [
+        'url' => env('SPA_URL', 'http://localhost:5173'),
+    ],
+
     /*
     |--------------------------------------------------------------------------
     | Third Party Services

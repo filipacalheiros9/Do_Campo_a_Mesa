@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
+import { abrirBackoffice } from '../utils/backoffice.js';
 
 const INICIO = {
   comprador: '/',
@@ -9,12 +10,26 @@ const INICIO = {
 };
 
 export default function Login() {
-  const { entrar } = useAuth();
+  const { entrar, utilizador: utilizadorAtual, token: tokenAtual } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [dados, setDados] = useState({ email: '', password: '' });
   const [erro, setErro] = useState('');
   const [aEnviar, setAEnviar] = useState(false);
+
+  useEffect(() => {
+    if (!utilizadorAtual) return;
+
+    if (utilizadorAtual.papel === 'admin' && tokenAtual) {
+      abrirBackoffice(tokenAtual);
+      return;
+    }
+
+    const destino = utilizadorAtual.papel === 'comprador'
+      ? (location.state?.de || INICIO.comprador)
+      : (INICIO[utilizadorAtual.papel] || '/');
+    navigate(destino, { replace: true });
+  }, [location.state?.de, navigate, tokenAtual, utilizadorAtual]);
 
   async function submeter(e) {
     e.preventDefault();
@@ -23,7 +38,13 @@ export default function Login() {
     setAEnviar(true);
 
     try {
-      const utilizador = await entrar(dados.email, dados.password);
+      const sessao = await entrar(dados.email, dados.password);
+      const { utilizador, token } = sessao;
+      if (utilizador.papel === 'admin') {
+        abrirBackoffice(token);
+        return;
+      }
+
       // O comprador pode regressar ao carrinho; os outros papéis entram no respetivo painel.
       const destino = utilizador.papel === 'comprador'
         ? (location.state?.de || INICIO.comprador)
@@ -34,6 +55,10 @@ export default function Login() {
     } finally {
       setAEnviar(false);
     }
+  }
+
+  if (utilizadorAtual) {
+    return <p className="text-center" role="status">A encaminhar para a sua área…</p>;
   }
 
   return (

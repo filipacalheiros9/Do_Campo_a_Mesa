@@ -13,6 +13,22 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        // O Azure App Service termina o TLS no proxy frontal. Confiar apenas
+        // nos cabeçalhos de proxy conhecidos permite ao Laravel gerar URLs
+        // HTTPS corretos sem confiar em cabeçalhos arbitrários.
+        $middleware->trustProxies(
+            at: '*',
+            headers: Request::HEADER_X_FORWARDED_FOR
+                | Request::HEADER_X_FORWARDED_HOST
+                | Request::HEADER_X_FORWARDED_PORT
+                | Request::HEADER_X_FORWARDED_PROTO
+                | Request::HEADER_X_FORWARDED_PREFIX,
+        );
+
+        $middleware->validateCsrfTokens(except: [
+            'sessao',
+        ]);
+
         $middleware->alias([
             'admin' => AdministradorAutenticado::class,
         ]);

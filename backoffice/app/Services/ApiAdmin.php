@@ -17,11 +17,6 @@ class ApiAdmin
             ->when($token, fn (PendingRequest $pedido) => $pedido->withToken($token));
     }
 
-    public function entrar(string $email, string $password): array
-    {
-        return $this->pedido()->post('/api/auth/login', compact('email', 'password'))->throw()->json();
-    }
-
     public function obter(string $caminho, string $token): array
     {
         return $this->pedido($token)->get($caminho)->throw()->json();

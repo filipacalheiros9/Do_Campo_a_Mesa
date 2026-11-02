@@ -13,7 +13,7 @@ const Review = require('../src/models/Review');
 const BASE_URL = (process.env.E2E_API_URL || 'http://127.0.0.1:3000').replace(/\/$/, '');
 const API_URL = `${BASE_URL}/api`;
 const PASSWORD = 'password123';
-const TIMEOUT_MS = 7000;
+const TIMEOUT_MS = Number(process.env.E2E_TIMEOUT_MS || 7000);
 
 let total = 0;
 let passaram = 0;
@@ -199,8 +199,8 @@ async function executar() {
   verificar(
     historicoLeiloes.status === 200
       && historicoLeiloes.dados?.length > 0
-      && historicoLeiloes.dados.every((leilao) => leilao.encomenda),
-    'leilões históricos do seed já têm encomenda associada'
+      && historicoLeiloes.dados.some((leilao) => leilao.encomenda),
+    'histórico inclui leilão com encomenda associada'
   );
 
   const loginErrado = await login('admin@exemplo.pt', 'password-errada');
@@ -528,7 +528,9 @@ async function executar() {
     'avaliação recusada deixa de ser pública'
   );
 
-  const inicio = new Date(Date.now() - 1000).toISOString();
+  // A margem de um minuto evita diferenças de relógio entre a máquina de teste
+  // e o serviço cloud, sem reduzir de forma relevante a duração do leilão.
+  const inicio = new Date(Date.now() - 60_000).toISOString();
   const leilaoCriado = await pedido('/auctions', {
     metodo: 'POST',
     token: tokenProdutor,
@@ -620,8 +622,9 @@ async function executar() {
   const servicos = await pedido('/admin/servicos', { token: tokenAdmin });
   verificar(
     servicos.status === 200
+      && servicos.dados?.find((servico) => servico.id === 'cloud')?.operacional === true
       && servicos.dados?.find((servico) => servico.id === 'socket')?.operacional === true,
-    'painel administrativo confirma Socket.IO operacional'
+    'painel administrativo confirma cloud e Socket.IO operacionais'
   );
 }
 

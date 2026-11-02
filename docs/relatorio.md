@@ -1,6 +1,6 @@
 # Relatório · Do Campo à Mesa
 
-> Relatório em desenvolvimento. Antes da entrega devem ser substituídos os campos marcados como **PENDENTE CLOUD** e acrescentada uma captura do ambiente publicado. Limite: 20 páginas.
+> Relatório do projeto, incluindo a validação do ambiente publicado. Limite: 20 páginas.
 
 ## 1. Introdução
 
@@ -28,7 +28,8 @@ O frontend e o backoffice não acedem diretamente à base de dados. Ambos utiliz
 ```mermaid
 flowchart LR
     U[Visitante / Comprador / Produtor] -->|HTTPS| SPA[SPA React + Vite]
-    A[Administrador] -->|HTTPS| BO[Backoffice Laravel + Blade]
+    A[Administrador] -->|login HTTPS| SPA
+    SPA -->|POST do JWT validado| BO[Backoffice Laravel + Blade]
     SPA -->|REST + JWT| API[API Node.js + Express]
     SPA <-->|WebSocket / Socket.IO| API
     BO -->|REST + JWT| API
@@ -88,7 +89,7 @@ O checkout está dividido em confirmação da entrega e pagamento. O comprador e
 
 O React Router separa rotas públicas e rotas protegidas. `RotaProtegida` verifica a autenticação e o papel antes de renderizar as páginas de comprador, produtor ou administrador. A proteção no frontend melhora a navegação, mas não é considerada uma barreira de segurança: todos os endpoints sensíveis repetem a verificação na API.
 
-O caminho `/admin` da SPA apresenta a entrada para o backoffice Laravel, que é uma aplicação independente. As rotas desconhecidas mostram uma página 404 da SPA.
+O caminho `/admin` da SPA efetua a passagem autenticada para o backoffice Laravel, que continua a ser uma aplicação independente. Depois do login comum, um administrador é encaminhado automaticamente: a SPA envia o JWT num formulário `POST` para o Laravel, que o valida junto da API e cria a sua própria sessão. Assim, não existe um segundo login nem se coloca o token no URL. A sessão persistida é recuperada ao reabrir o browser; se um utilizador autenticado visitar `/login`, a SPA encaminha-o conforme o papel, sem voltar a mostrar o formulário. Um token expirado ou associado a outro papel é removido antes de regressar ao login único. As rotas desconhecidas mostram uma página 404 da SPA.
 
 ### 3.4 Mobile First e acessibilidade
 
@@ -133,7 +134,7 @@ O middleware de erros converte validações Mongoose, identificadores inválidos
 A especificação `api/openapi.yaml` documenta os caminhos, parâmetros, corpos, respostas, schemas e autenticação Bearer. O Swagger UI é servido pela própria API em `/api-docs`, permitindo consultar e experimentar os endpoints.
 
 - URL local: `http://localhost:3000/api-docs`
-- URL pública: **PENDENTE CLOUD**
+- URL pública: `https://dcm-api-fc2026.azurewebsites.net/api-docs`
 
 ![Documentação interativa da API](images/api-swagger.png)
 
@@ -174,7 +175,7 @@ Após o login, a API emite um JWT assinado com `JWT_SECRET`, contendo o identifi
 
 O produtor precisa ainda de estar aprovado por um administrador. O middleware `produtorValidado` consulta a base de dados antes de permitir a publicação de produtos ou leilões. Os sockets usam o mesmo JWT durante o handshake e entram numa sala pessoal apenas depois da validação.
 
-No backoffice, o Laravel autentica através da API. Apenas uma resposta com papel `admin` é aceite, o token fica guardado na sessão Laravel e a sessão é regenerada no login para prevenir fixation. O logout invalida a sessão e regenera o token CSRF. O formulário de login possui limitação de cinco tentativas por minuto.
+No backoffice, o Laravel autentica através da API. Recebe o JWT por `POST` a partir da origem exata configurada em `SPA_URL`, consulta `/api/auth/eu` e só cria a sessão quando a API confirma o papel `admin`. O token nunca é incluído na query string. A sessão Laravel é regenerada para prevenir fixation e o token fica guardado apenas nessa sessão. A passagem proveniente da SPA possui limitação de pedidos. Não existe um formulário de login próprio no domínio técnico: `/entrar` encaminha sempre para o login único da SPA. O logout invalida a sessão Laravel, regenera o token CSRF e passa por uma rota pública da SPA que remove também o JWT do `localStorage` antes de regressar ao catálogo.
 
 ### 6.2 Passwords, dados e pedidos
 
@@ -224,35 +225,39 @@ A API envia a hora do servidor no evento `estado`. O cliente calcula a diferenç
 
 ## 8. Deployment na Cloud
 
-O código encontra-se preparado para deployment, mas o ambiente público ainda não foi criado. A arquitetura prevista é a seguinte e deve ser confirmada antes da entrega:
+O ambiente público foi criado no Azure, na região **Spain Central**, usando a subscrição Azure for Students. Os três componentes web partilham um único plano Linux B1. Esta solução mantém os processos independentes, mas evita pagar três planos de computação.
 
 | Componente | Serviço previsto | Modelo | Estado |
 |---|---|---|---|
-| SPA React | alojamento estático gerido, por exemplo Azure Static Web Apps | PaaS | **PENDENTE CLOUD** |
-| API Node.js + Socket.IO | Azure App Service com WebSockets ativos | PaaS | **PENDENTE CLOUD** |
-| Backoffice Laravel | serviço PHP gerido ou App Service separado | PaaS | **PENDENTE CLOUD** |
-| Base de dados | MongoDB Atlas | DBaaS | configuração por `MONGODB_URI` |
-| Fotografias | Azure Blob Storage | armazenamento gerido | integração implementada; recurso pendente |
+| SPA React | Azure App Service, build Vite servido por Node.js | PaaS | publicado com HTTPS e fallback para `index.html` |
+| API Node.js + Socket.IO | Azure App Service com WebSockets ativos | PaaS | publicada e validada com 63 testes E2E |
+| Backoffice Laravel | Azure App Service PHP separado | PaaS | publicado e validado através do login público |
+| Base de dados | MongoDB Atlas M0 | DBaaS | ligada por `MONGODB_URI` guardada em App Settings |
+| Fotografias | Azure Blob Storage (`produtos`) | armazenamento gerido | recurso criado e configurado na API |
 | Geocodificação | Nominatim/OpenStreetMap | serviço externo | implementado |
 
-O frontend será compilado com `VITE_API_URL` e `VITE_ADMIN_URL`. A API receberá `MONGODB_URI`, `JWT_SECRET`, `CLIENT_URL`, `STORAGE_CONN` e `STORAGE_CONTAINER`. O backoffice usará `APP_URL`, `APP_KEY` e `API_URL`. A origem CORS deve coincidir exatamente com o URL público da SPA e os WebSockets têm de estar ativos no serviço da API.
+O frontend foi compilado com os URLs públicos da API e do backoffice em `VITE_API_URL` e `VITE_ADMIN_URL`. A API recebe `MONGODB_URI`, `JWT_SECRET`, `CLIENT_URL`, `STORAGE_CONN` e `STORAGE_CONTAINER` através de App Settings, sem guardar segredos no repositório. O backoffice usa `APP_URL`, `APP_KEY`, `API_URL` e `SPA_URL` pelo mesmo mecanismo. A origem CORS coincide com o URL público da SPA, os três App Services forçam HTTPS, o Laravel confia nos cabeçalhos do proxy Azure necessários para preservar o esquema HTTPS e os WebSockets estão ativos no serviço da API.
 
-Para a demonstração académica pretende-se usar quotas gratuitas, créditos de estudante ou o nível de menor custo que suporte HTTPS e WebSockets. Não é apresentado um valor mensal antes da criação dos recursos, porque o preço depende da região, do plano e das quotas disponíveis. Esta tabela deve ser substituída pelos valores observados no portal:
+A intenção inicial era publicar a SPA no Azure Static Web Apps. Contudo, as regiões permitidas pela política da subscrição de estudante não coincidiam com as regiões disponíveis nesse serviço. Como alternativa, a SPA pré-compilada foi publicada num terceiro Web App dentro do mesmo plano B1, sem criar outro plano de computação. O pequeno servidor Node.js incluído no deployment serve os ficheiros de `dist/` e devolve `index.html` nas rotas internas, garantindo o funcionamento do React Router após atualizar a página.
+
+Foi escolhido o menor plano usado no projeto que suporta a demonstração contínua dos WebSockets. O custo do plano App Service é partilhado pelos três Web Apps e fica coberto pelos créditos da subscrição de estudante durante o período de avaliação. O MongoDB usa o nível gratuito e o Blob Storage é faturado pelo reduzido volume efetivamente guardado.
 
 | Recurso | Plano/região | Custo mensal estimado | Custo observado |
 |---|---|---:|---:|
-| Frontend | **PENDENTE CLOUD** | **PENDENTE** | **PENDENTE** |
-| API | **PENDENTE CLOUD** | **PENDENTE** | **PENDENTE** |
-| Backoffice | **PENDENTE CLOUD** | **PENDENTE** | **PENDENTE** |
-| MongoDB | **PENDENTE CLOUD** | **PENDENTE** | **PENDENTE** |
-| Blob Storage | **PENDENTE CLOUD** | **PENDENTE** | **PENDENTE** |
+| SPA, API e backoffice | App Service Linux B1, Spain Central | cerca de 13,14 USD/mês (0,018 USD/h × 730 h) | coberto pelos créditos Azure for Students |
+| MongoDB | Atlas M0 (Free) | gratuito | gratuito |
+| Blob Storage | Standard LRS, Spain Central | variável, por utilização | residual para o volume académico |
 
-URLs a preencher depois do deployment:
+O valor do plano B1 foi consultado na [Azure Retail Prices API](https://prices.azure.com/api/retail/prices) em 2 de novembro de 2026. É apenas uma estimativa mensal: o preço efetivo pode variar e o portal deve ser consultado antes da defesa. Parar os Web Apps não elimina o custo do plano; para deixar de o consumir é necessário reduzir o plano ou eliminar o grupo de recursos depois da avaliação.
 
-- SPA: **PENDENTE CLOUD**
-- API/health: **PENDENTE CLOUD**
-- Swagger UI: **PENDENTE CLOUD**
-- Backoffice: **PENDENTE CLOUD**
+URLs públicas do deployment:
+
+- Aplicação e login: https://dcm-web-fc2026.azurewebsites.net
+- API/health: https://dcm-api-fc2026.azurewebsites.net/api/health
+- Swagger UI: https://dcm-api-fc2026.azurewebsites.net/api-docs
+- Backoffice (endereço técnico; o acesso normal é encaminhado pela SPA): https://dcm-admin-fc2026.azurewebsites.net
+
+Na verificação final, os cinco endereços testados — raiz da SPA, rota interna da SPA, health check, Swagger UI e login do backoffice — responderam com HTTP 200. O preflight CORS devolveu `Access-Control-Allow-Origin` apenas para o domínio público da SPA e recusou uma origem externa. Foi ainda repetido o percurso real do administrador: login na SPA, envio autenticado por `POST` e chegada direta ao painel Laravel em HTTPS, sem segundo formulário de login. O painel técnico apresentou Azure App Service, API, Socket.IO, MongoDB Atlas, Blob Storage e Swagger como operacionais. Foi também enviado um PNG de 87 020 bytes pela rota de imagem de produto; a API devolveu um URL no contentor `produtos` e o blob respondeu com HTTP 200.
 
 ## 9. Testes e validação
 
@@ -282,7 +287,9 @@ Todos os testes passaram.
 Dados temporários do teste removidos.
 ```
 
-O backoffice contém testes de funcionalidade para redirecionamento de utilizadores não autenticados, disponibilidade do login, autenticação através de uma API simulada, rejeição de contas sem papel de administrador e escape de conteúdo potencialmente perigoso nas views Blade.
+O mesmo teste foi repetido contra `https://dcm-api-fc2026.azurewebsites.net`, com `E2E_TIMEOUT_MS=30000` para acomodar a latência do plano B1, e voltou a concluir **63/63** verificações. Esta execução confirmou em produção a autenticação, os pagamentos concorrentes, as notificações Socket.IO e a aceitação atómica de apenas uma entre duas licitações simultâneas com o mesmo valor.
+
+O backoffice contém oito testes de funcionalidade, com 23 asserções, para redirecionamento de utilizadores não autenticados, encaminhamento do endereço técnico para o login único, fim coordenado da sessão, escape de conteúdo potencialmente perigoso nas views Blade e passagem de sessão a partir da SPA. Esta última aceita um token de administrador válido, rejeita uma origem diferente da configurada e remove uma sessão cujo utilizador já não tenha papel de administrador.
 
 ### 9.1 Testes funcionais finais com os quatro perfis
 
@@ -293,7 +300,7 @@ Foi executada uma validação final assistida através da interface real num nav
 | Visitante | catálogo público; listagem de leilões; redirecionamento de uma rota protegida para o login | **3/3 passaram** |
 | Comprador | login pela SPA; consulta das encomendas e respetivos estados; acesso ao carrinho | **3/3 passaram** |
 | Produtor | login e painel do produtor; gestão de produtos; formulário de criação de leilão | **3/3 passaram** |
-| Administrador | login pela SPA; acesso ao login Laravel; painel global, serviços e gestão da plataforma | **3/3 passaram** |
+| Administrador | login pela SPA; encaminhamento automático sem segundo login; painel global, serviços e gestão da plataforma | **3/3 passaram** |
 | **Total** | **12 cenários de interface** | **12/12 passaram** |
 
 Esta validação confirma o encaminhamento por papel, a proteção das rotas e a integração do backoffice com a API. Como demonstração complementar, o cenário de leilão pode ser apresentado em duas janelas do browser, confirmando atualização imediata, presença, contagem decrescente e reconexão; a concorrência de duas licitações iguais já é verificada automaticamente no teste E2E.

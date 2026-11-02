@@ -1,15 +1,21 @@
-const ADMIN_URL = import.meta.env.VITE_ADMIN_URL || 'http://localhost:8000';
+import { useEffect } from 'react';
+import { useAuth } from '../../context/AuthContext.jsx';
+import { abrirBackoffice } from '../../utils/backoffice.js';
 
 export default function PainelAdmin() {
+  const { token } = useAuth();
+
+  useEffect(() => {
+    if (token) abrirBackoffice(token);
+  }, [token]);
+
   return (
     <div className="formulario-estreito text-center">
-      <p className="texto-secundario">Componente de valorização</p>
-      <h1>Backoffice Laravel</h1>
-      <p>
-        A validação de produtores, moderação de avaliações e visão global da plataforma
-        encontram-se no backoffice dedicado.
-      </p>
-      <a className="btn btn-success" href={ADMIN_URL}>Abrir administração</a>
+      <h1>A abrir a administração…</h1>
+      <p>A sessão está a ser encaminhada de forma segura para o backoffice Laravel.</p>
+      <button className="btn btn-success" type="button" onClick={() => abrirBackoffice(token)}>
+        Continuar para a administração
+      </button>
     </div>
   );
 }

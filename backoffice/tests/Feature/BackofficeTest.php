@@ -17,43 +17,73 @@ class BackofficeTest extends TestCase
         $response->assertRedirect('/entrar');
     }
 
-    public function test_o_formulario_de_login_esta_disponivel(): void
+    public function test_o_login_tecnico_encaminha_para_o_login_unico_da_spa(): void
     {
         $this->get('/entrar')
-            ->assertOk()
-            ->assertSee('Entrar como administrador');
+            ->assertRedirect('http://localhost:5173/login');
     }
 
-    public function test_um_administrador_pode_iniciar_sessao_atraves_da_api(): void
+    public function test_o_login_da_spa_abre_diretamente_a_sessao_do_backoffice(): void
     {
         Http::preventStrayRequests();
         Http::fake([
-            '*/api/auth/login' => Http::response([
-                'token' => 'jwt-de-teste',
-                'utilizador' => ['nome' => 'Admin', 'papel' => 'admin'],
+            '*/api/auth/eu' => Http::response([
+                'nome' => 'Admin',
+                'email' => 'admin@exemplo.pt',
+                'papel' => 'admin',
             ]),
         ]);
 
-        $this->post('/entrar', ['email' => 'admin@exemplo.pt', 'password' => 'password123'])
+        $this->withHeader('Origin', 'http://localhost:5173')
+            ->post('/sessao', ['token' => 'jwt-da-spa'])
             ->assertRedirect('/')
-            ->assertSessionHas('token', 'jwt-de-teste');
+            ->assertSessionHas('token', 'jwt-da-spa')
+            ->assertSessionHas('utilizador.papel', 'admin');
 
         Http::assertSentCount(1);
     }
 
-    public function test_uma_conta_sem_papel_de_administrador_e_recusada(): void
+    public function test_a_transferencia_de_sessao_recusa_outras_origens(): void
+    {
+        Http::preventStrayRequests();
+
+        $this->withHeader('Origin', 'https://origem-invalida.test')
+            ->post('/sessao', ['token' => 'jwt-da-spa'])
+            ->assertForbidden()
+            ->assertSessionMissing('token');
+
+        Http::assertNothingSent();
+    }
+
+    public function test_a_transferencia_remove_uma_sessao_sem_papel_de_admin(): void
     {
         Http::preventStrayRequests();
         Http::fake([
-            '*/api/auth/login' => Http::response([
-                'token' => 'jwt-de-teste',
-                'utilizador' => ['nome' => 'Comprador', 'papel' => 'comprador'],
+            '*/api/auth/eu' => Http::response([
+                'nome' => 'Comprador',
+                'email' => 'comprador@exemplo.pt',
+                'papel' => 'comprador',
             ]),
         ]);
 
-        $this->post('/entrar', ['email' => 'comprador@exemplo.pt', 'password' => 'password123'])
-            ->assertRedirect()
-            ->assertSessionHasErrors('email')
+        $this->withSession([
+            'token' => 'jwt-anterior',
+            'utilizador' => ['nome' => 'Admin', 'papel' => 'admin'],
+        ])->withHeader('Origin', 'http://localhost:5173')
+            ->post('/sessao', ['token' => 'jwt-comprador'])
+            ->assertRedirect('http://localhost:5173/sair')
+            ->assertSessionMissing('token');
+
+        Http::assertSentCount(1);
+    }
+
+    public function test_sair_termina_a_sessao_e_encaminha_para_a_spa(): void
+    {
+        $this->withSession([
+            'token' => 'jwt-de-teste',
+            'utilizador' => ['nome' => 'Admin', 'papel' => 'admin'],
+        ])->post('/sair')
+            ->assertRedirect('http://localhost:5173/sair')
             ->assertSessionMissing('token');
     }
 

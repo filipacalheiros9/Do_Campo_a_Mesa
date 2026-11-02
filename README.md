@@ -5,6 +5,20 @@ Trabalho prático individual de **Desenvolvimento Web e para a Cloud** (MEI · I
 
 Este repositório contém a aplicação funcional: API REST, SPA para visitantes, compradores e produtores, leilões em tempo real e backoffice Laravel para administradores.
 
+## Aplicação publicada
+
+- Aplicação (entrada única): https://dcm-web-fc2026.azurewebsites.net
+- API: https://dcm-api-fc2026.azurewebsites.net
+- Health check: https://dcm-api-fc2026.azurewebsites.net/api/health
+- Swagger UI: https://dcm-api-fc2026.azurewebsites.net/api-docs
+- Backoffice Laravel (endereço técnico): https://dcm-admin-fc2026.azurewebsites.net
+
+O utilizador entra sempre pela aplicação React. Quando a API identifica o papel `admin`, a SPA transfere a sessão de forma segura e encaminha automaticamente para o backoffice Laravel, sem pedir um segundo login.
+Ao sair do backoffice, as sessões Laravel e React são terminadas e o browser regressa ao catálogo público. O endereço técnico do Laravel nunca apresenta um formulário de login próprio: encaminha para o login único da SPA.
+Se o browser for fechado com uma sessão válida, a aplicação recupera-a ao reabrir. Visitar `/login` já autenticado encaminha imediatamente para a área correspondente ao papel, em vez de voltar a apresentar o formulário.
+
+Os três componentes web são executados em Azure App Service, na região Spain Central, e partilham o mesmo plano Linux B1. O MongoDB Atlas fornece a base de dados e as fotografias são guardadas no contentor `produtos` do Azure Blob Storage. A SPA foi alojada no App Service porque as regiões disponibilizadas pelo Azure Static Web Apps não coincidiam com as regiões permitidas pela subscrição Azure for Students. Todas as ligações públicas usam HTTPS; a API tem WebSockets ativos e restringe CORS ao domínio público da SPA.
+
 ## Estrutura
 
 ```
@@ -137,7 +151,7 @@ As rotas de autenticação, produtos, produtores, encomendas, leilões, avaliaç
 - ligação em tempo real à sala de leilão (hook `useLeilao`);
 - SASS com as variáveis do tema, o mixin Mobile First `a-partir-de()` e a grelha do catálogo com 3 breakpoints (768, 1024 e 1280 px).
 
-As áreas de visitante, comprador e produtor usam a API real. O administrador dispõe de um backoffice Laravel separado.
+As áreas de visitante, comprador e produtor usam a API real. O administrador inicia sessão na mesma SPA e é encaminhado automaticamente para o backoffice Laravel separado.
 
 ## Funcionalidades
 

@@ -33,8 +33,8 @@
 
 <section class="cartao estado-servicos" aria-labelledby="titulo-servicos">
     <div class="cabecalho-secao">
-        <div><h2 id="titulo-servicos">Estado dos serviços</h2>
-            <span class="secundario">Estado técnico do ambiente atual.</span></div>
+        <div><h2 id="titulo-servicos">Estado da cloud e dos serviços</h2>
+            <span class="secundario">Monitorização do ambiente, API, tempo real, dados e imagens.</span></div>
     </div>
     <div id="lista-servicos">
         @foreach($servicos as $servico)

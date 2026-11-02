@@ -17,9 +17,20 @@ router.use(auth('admin'));
 router.get('/servicos', a(async (req, res) => {
   const io = req.app.get('io');
   const mongoLigado = mongoose.connection.readyState === 1;
+  const mongoAtlas = process.env.MONGODB_URI?.startsWith('mongodb+srv://');
   const armazenamentoCloud = Boolean(process.env.STORAGE_CONN);
+  const nomeAppAzure = process.env.WEBSITE_SITE_NAME;
+  const ambienteProducao = process.env.NODE_ENV === 'production';
 
   res.json([
+    {
+      id: 'cloud',
+      nome: 'Ambiente de execução',
+      operacional: true,
+      detalhe: nomeAppAzure
+        ? `Azure App Service · ${nomeAppAzure}`
+        : (ambienteProducao ? 'Produção' : 'Desenvolvimento local')
+    },
     { id: 'api', nome: 'API REST', operacional: true, detalhe: 'Node.js e Express' },
     {
       id: 'socket',
@@ -29,15 +40,19 @@ router.get('/servicos', a(async (req, res) => {
     },
     {
       id: 'mongo',
-      nome: 'MongoDB',
+      nome: mongoAtlas ? 'MongoDB Atlas' : 'MongoDB',
       operacional: mongoLigado,
-      detalhe: mongoLigado ? 'Base de dados ligada' : 'Sem ligação à base de dados'
+      detalhe: mongoLigado
+        ? (mongoAtlas ? 'Cluster cloud ligado' : 'Base de dados ligada')
+        : 'Sem ligação à base de dados'
     },
     {
       id: 'imagens',
       nome: 'Armazenamento de imagens',
-      operacional: true,
-      detalhe: armazenamentoCloud ? 'Azure Blob Storage configurado' : 'Armazenamento local de desenvolvimento'
+      operacional: armazenamentoCloud || !ambienteProducao,
+      detalhe: armazenamentoCloud
+        ? 'Azure Blob Storage configurado'
+        : (ambienteProducao ? 'Azure Blob Storage por configurar' : 'Armazenamento local de desenvolvimento')
     },
     { id: 'swagger', nome: 'Documentação da API', operacional: true, detalhe: 'Swagger UI em /api-docs' }
   ]);

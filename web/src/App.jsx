@@ -10,6 +10,7 @@ import SalaLeilao from './pages/SalaLeilao.jsx';
 import Carrinho from './pages/Carrinho.jsx';
 import Encomendas from './pages/Encomendas.jsx';
 import Login from './pages/Login.jsx';
+import TerminarSessao from './pages/TerminarSessao.jsx';
 import Registo from './pages/Registo.jsx';
 import PainelProdutor from './pages/produtor/Painel.jsx';
 import ProdutosProdutor from './pages/produtor/Produtos.jsx';
@@ -35,6 +36,7 @@ export default function App() {
           <Route path="/produtores/:id" element={<Produtor />} />
           <Route path="/leiloes" element={<Leiloes />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/sair" element={<TerminarSessao />} />
           <Route path="/registo" element={<Registo />} />
 
           {/* Qualquer utilizador autenticado pode assistir; só compradores licitam */}

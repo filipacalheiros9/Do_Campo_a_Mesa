@@ -4,7 +4,6 @@ import { useCarrinho } from '../context/CarrinhoContext.jsx';
 import { useLeiloesEmDireto } from '../hooks/useLeiloesEmDireto.js';
 import { useNotificacoes } from '../hooks/useNotificacoes.js';
 
-const ADMIN_URL = import.meta.env.VITE_ADMIN_URL || 'http://localhost:8000';
 
 function IconeNavegacao({ tipo }) {
   const formas = {
@@ -68,7 +67,7 @@ export default function Navbar() {
       }
     );
   } else if (utilizador?.papel === 'admin') {
-    abas.push({ href: ADMIN_URL, icone: 'admin', texto: 'Administração' });
+    abas.push({ href: '/admin', icone: 'admin', texto: 'Administração' });
   } else {
     abas.push(
       { to: '/login', icone: 'entrar', texto: 'Entrar' },
@@ -117,7 +116,7 @@ export default function Navbar() {
               </>
             )}
             {utilizador?.papel === 'admin' && (
-              <li className="nav-item"><a href={ADMIN_URL} className="nav-link">Administração</a></li>
+              <li className="nav-item"><a href="/admin" className="nav-link">Administração</a></li>
             )}
           </ul>
           <div className="acoes-menu d-flex gap-2 align-items-center">
