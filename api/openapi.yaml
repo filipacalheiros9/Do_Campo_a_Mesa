@@ -412,7 +412,7 @@ paths:
       operationId: atualizarEstadoEncomenda
       tags: [Encomendas]
       summary: Avançar o estado de uma encomenda
-      description: "Sequência permitida: pendente → confirmada → pronta → entregue."
+      description: "Sequência permitida: pendente → confirmada → pronta → entregue. A encomenda tem de estar paga."
       security: [ { bearerAuth: [] } ]
       requestBody:
         required: true
@@ -426,6 +426,31 @@ paths:
       responses:
         '200':
           description: Estado atualizado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Encomenda' }
+        '400': { $ref: '#/components/responses/PedidoInvalido' }
+        '401': { $ref: '#/components/responses/NaoAutorizado' }
+        '403': { $ref: '#/components/responses/Proibido' }
+        '404': { $ref: '#/components/responses/NaoEncontrado' }
+        '409': { $ref: '#/components/responses/Conflito' }
+  /orders/{id}/pagamento:
+    parameters:
+      - $ref: '#/components/parameters/Id'
+    post:
+      operationId: pagarEncomenda
+      tags: [Encomendas]
+      summary: Simular o pagamento de uma encomenda pendente
+      description: O valor é calculado pelo servidor. Dados de cartão ou telefone nunca são recebidos nem guardados.
+      security: [ { bearerAuth: [] } ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/PagamentoInput' }
+      responses:
+        '200':
+          description: Pagamento confirmado
           content:
             application/json:
               schema: { $ref: '#/components/schemas/Encomenda' }
@@ -947,13 +972,14 @@ components:
         imagemUrl: { type: string, format: uri }
     EncomendaInput:
       type: object
-      required: [linhas]
+      required: [linhas, pagamento]
       properties:
         linhas:
           type: array
           minItems: 1
           items: { $ref: '#/components/schemas/LinhaEncomendaInput' }
         entrega: { $ref: '#/components/schemas/Entrega' }
+        pagamento: { $ref: '#/components/schemas/PagamentoInput' }
     LinhaEncomendaInput:
       type: object
       required: [produto, quantidade]
@@ -974,6 +1000,20 @@ components:
       properties:
         tipo: { type: string, enum: [levantamento, entrega], default: levantamento }
         morada: { type: string, description: Obrigatória quando o tipo é entrega, example: 'Rua Central 10, Braga' }
+    PagamentoInput:
+      type: object
+      required: [metodo]
+      description: Só o método da simulação é enviado; nunca são enviados dados bancários.
+      properties:
+        metodo: { type: string, enum: [cartao, mbway], example: cartao }
+    Pagamento:
+      type: object
+      required: [estado]
+      properties:
+        estado: { type: string, enum: [por_pagar, pago], example: pago }
+        metodo: { type: string, enum: [cartao, mbway], example: cartao }
+        referencia: { type: string, readOnly: true, example: PAG-20261031-A1B2C3D4 }
+        pagoEm: { type: string, format: date-time, readOnly: true }
     Encomenda:
       type: object
       required: [_id, comprador, produtor, linhas, estado, entrega]
@@ -987,6 +1027,7 @@ components:
           items: { $ref: '#/components/schemas/LinhaEncomenda' }
         entrega: { $ref: '#/components/schemas/Entrega' }
         origem: { type: string, enum: [loja, leilao], default: loja }
+        pagamento: { $ref: '#/components/schemas/Pagamento' }
         leilao: { type: string }
         total: { type: number, format: double, readOnly: true, example: 4.8 }
         avaliacoes:

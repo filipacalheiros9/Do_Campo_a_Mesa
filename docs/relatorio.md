@@ -9,7 +9,7 @@ O **Do Campo à Mesa** é um mercado digital que aproxima produtores locais e co
 O sistema contempla quatro perfis de utilização:
 
 - o **visitante** consulta o catálogo, os produtores e os leilões públicos;
-- o **comprador** gere o carrinho, cria encomendas, acompanha estados, avalia compras e participa em leilões;
+- o **comprador** gere o carrinho, simula pagamentos, cria encomendas, acompanha estados, avalia compras e participa em leilões;
 - o **produtor** gere o perfil público, produtos, fotografias, stock, encomendas e leilões;
 - o **administrador** valida produtores, modera avaliações e acompanha a plataforma através de um backoffice Laravel.
 
@@ -77,6 +77,8 @@ Foram usados contextos React para o estado partilhado:
 - `NotificacoesContext` agrega os eventos recebidos e alimenta a interface de notificações.
 
 O estado específico de cada página permanece local. Esta opção evita introduzir uma biblioteca adicional de gestão de estado quando os contextos são suficientes para o volume da aplicação.
+
+O checkout está dividido em confirmação da entrega e pagamento. O comprador escolhe cartão ou MB WAY; os campos visuais completam o fluxo, mas apenas o método é enviado à API. As encomendas ganhas em leilão, que não passam pelo carrinho, ficam por pagar e apresentam a mesma interface na área de encomendas. O histórico mostra estado, método, referência e data do pagamento.
 
 ![Área autenticada de encomendas](images/spa-encomendas.png)
 
@@ -156,13 +158,13 @@ erDiagram
     ORDER ||--o{ REVIEW : permite
 ```
 
-As linhas ficam embebidas em cada encomenda porque são poucas, são sempre lidas com a encomenda e precisam de conservar uma cópia do nome, preço e unidade no momento da compra. Os dados próprios da exploração também ficam embebidos no utilizador produtor, pois formam uma relação pequena de um para um. A licitação atual fica embebida no leilão para poder ser comparada e atualizada atomicamente.
+As linhas ficam embebidas em cada encomenda porque são poucas, são sempre lidas com a encomenda e precisam de conservar uma cópia do nome, preço e unidade no momento da compra. O pagamento também é embebido, pois existe no máximo um por encomenda e é apresentado sempre com ela; guarda apenas estado, método, referência e data. Os dados próprios da exploração ficam embebidos no utilizador produtor, pois formam uma relação pequena de um para um. A licitação atual fica embebida no leilão para poder ser comparada e atualizada atomicamente.
 
 Produtos, encomendas, leilões, licitações e avaliações referenciam utilizadores através de `ObjectId`. As licitações completas ficam na coleção `bids`, pois um leilão pode receber muitas e o documento principal não deve crescer sem limite. As avaliações ficam em `reviews` para poderem ser consultadas por produtor e moderadas de forma independente.
 
 Foram criados índices para emails únicos, pesquisas de produtos, encomendas por comprador ou produtor, datas e estados dos leilões e controlo de avaliações duplicadas. As consultas usam `$regex` para pesquisa textual, `$in` para listas e épocas, `$gte`/`$lte` para preços e datas, `$lt`/`$gt` para o ciclo dos leilões e `$inc` para alterações atómicas de stock. Os virtuais `Product.disponivel` e `Order.total` calculam valores derivados sem os guardar.
 
-O comando `npm run seed`, executado na pasta `api`, repõe dados coerentes de demonstração: cinco utilizadores, cinco produtos, três encomendas, três leilões, cinco licitações e duas avaliações. Um dos leilões é histórico e já fica associado à respetiva encomenda; as datas dos leilões restantes são calculadas relativamente ao momento da execução. O seed apaga previamente as coleções da aplicação e deve ser usado apenas em desenvolvimento ou num ambiente próprio de demonstração.
+O comando `npm run seed`, executado na pasta `api`, repõe dados coerentes de demonstração: cinco utilizadores, cinco produtos, três encomendas com pagamentos, três leilões, cinco licitações e duas avaliações. Um dos leilões é histórico e já fica associado à respetiva encomenda; as datas dos leilões restantes são calculadas relativamente ao momento da execução. O seed apaga previamente as coleções da aplicação e deve ser usado apenas em desenvolvimento ou num ambiente próprio de demonstração.
 
 ## 6. Segurança
 
@@ -177,6 +179,8 @@ No backoffice, o Laravel autentica através da API. Apenas uma resposta com pape
 ### 6.2 Passwords, dados e pedidos
 
 As passwords são transformadas com bcrypt e custo 12 antes de serem guardadas. O hash não é selecionado por omissão e nunca integra os dados públicos do utilizador. A API valida emails, papéis, estados, preços, quantidades, datas, classificações e propriedade dos recursos. Preços e produtores das encomendas são lidos da base de dados em vez de serem aceites do browser.
+
+O fluxo não integra um gateway de pagamento externo. Números de cartão, validade, CVC e telefone não são enviados à API nem persistidos; o servidor recebe apenas o método, calcula o valor a partir da encomenda e gera a referência. Uma atualização condicional impede dois pagamentos concorrentes e o produtor não pode confirmar uma encomenda ainda por pagar.
 
 O stock é alterado com operações condicionais e `$inc`, evitando vender uma quantidade que deixou de estar disponível. Se uma encomenda com várias linhas falhar depois de algumas reservas, a API compensa as alterações já feitas. Transições de estado usam o estado anterior como condição para detetar pedidos concorrentes.
 
@@ -203,6 +207,7 @@ O Socket.IO usa uma sala `leilao:<id>` por leilão e uma sala pessoal `user:<id>
 | Servidor → sala | `aberto` / `terminado` | identificador, vencedor e valor | Início ou fim |
 | Servidor → utilizador | `nova-encomenda` | identificador e total | Nova compra ao produtor |
 | Servidor → utilizador | `encomenda-atualizada` | identificador e estado | Alteração pelo produtor |
+| Servidor → utilizador | `pagamento-confirmado` | encomenda, método, referência e total | Pagamento aceite |
 | Servidor → utilizador | `nova-avaliacao` | classificação e produto | Avaliação recebida |
 | Servidor → utilizador | `leilao-ganho` / `leilao-terminado` | lote, valor e encomenda | Conclusão do leilão |
 | Servidor → utilizador | `conta-validada` | aprovação | Decisão do administrador |
@@ -259,6 +264,7 @@ O teste cobre:
 - registo, aprovação administrativa e login de produtor;
 - criação, pesquisa, filtros, propriedade e alteração de produtos;
 - stock insuficiente, reserva atómica e cálculo do total da encomenda;
+- checkout com cartão e MB WAY, propriedade da encomenda, bloqueio de encomendas por pagar e concorrência de pagamentos;
 - isolamento de encomendas e transições de estado;
 - notificação de estado por Socket.IO;
 - classificações, duplicação, denúncia idempotente e moderação;
@@ -271,7 +277,7 @@ O teste cobre:
 O teste cria identificadores e emails exclusivos e remove os documentos temporários no final. A execução final apresentou:
 
 ```text
-57 / 57 verificações passaram.
+63 / 63 verificações passaram.
 Todos os testes passaram.
 Dados temporários do teste removidos.
 ```

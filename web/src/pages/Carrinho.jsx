@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useCarrinho } from '../context/CarrinhoContext.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
 import { api } from '../api/client.js';
+import FormularioPagamento from '../components/FormularioPagamento.jsx';
 
 const euro = (valor) => valor.toLocaleString('pt-PT', { style: 'currency', currency: 'EUR' });
 
@@ -21,15 +22,22 @@ export default function Carrinho() {
   const [aEnviar, setAEnviar] = useState(false);
   const [erro, setErro] = useState('');
   const [mensagem, setMensagem] = useState('');
+  const [aEscolherPagamento, setAEscolherPagamento] = useState(false);
 
-  async function finalizarCompra(e) {
+  function continuarParaPagamento(e) {
     e.preventDefault();
-    // Evita pedidos duplicados enquanto o primeiro envio ainda está a decorrer.
-    if (linhas.length === 0 || aEnviar) return;
     if (tipoEntrega === 'entrega' && !morada.trim()) {
       setErro('Indique a morada de entrega.');
       return;
     }
+    setErro('');
+    setMensagem('');
+    setAEscolherPagamento(true);
+  }
+
+  async function finalizarCompra({ metodo }) {
+    // Evita pedidos duplicados enquanto o primeiro envio ainda está a decorrer.
+    if (linhas.length === 0 || aEnviar) return;
 
     setAEnviar(true);
     setErro('');
@@ -49,7 +57,8 @@ export default function Carrinho() {
           entrega: {
             tipo: tipoEntrega,
             ...(tipoEntrega === 'entrega' ? { morada: morada.trim() } : {})
-          }
+          },
+          pagamento: { metodo }
         }
       })
     ));
@@ -68,7 +77,8 @@ export default function Carrinho() {
     if (criadas === grupos.length) {
       // Todas foram criadas: já não é necessário manter qualquer artigo.
       esvaziar();
-      setMensagem(`${criadas} encomenda${criadas === 1 ? '' : 's'} criada${criadas === 1 ? '' : 's'} com sucesso.`);
+      setAEscolherPagamento(false);
+      setMensagem(`${criadas} encomenda${criadas === 1 ? '' : 's'} criada${criadas === 1 ? '' : 's'} e paga${criadas === 1 ? '' : 's'} com sucesso.`);
     } else {
       // Mantém no carrinho apenas os grupos que falharam, evitando encomendas repetidas.
       removerProdutos(produtosEncomendados);
@@ -134,8 +144,8 @@ export default function Carrinho() {
       {mensagem && <div className="alert alert-success" role="status">{mensagem}</div>}
       {erro && <div className="alert alert-danger" role="alert">{erro}</div>}
 
-      {linhas.length > 0 && (
-        <form className="card card-body mt-4" onSubmit={finalizarCompra}>
+      {linhas.length > 0 && !aEscolherPagamento && (
+        <form className="card card-body mt-4" onSubmit={continuarParaPagamento}>
           <fieldset disabled={aEnviar}>
             <legend className="h5">Como pretende receber a encomenda?</legend>
             <div className="form-check">
@@ -164,10 +174,23 @@ export default function Carrinho() {
               Será criada uma encomenda por produtor ({gruposPorProdutor.length} no total).
             </p>
             <button type="submit" className="btn btn-success">
-              {aEnviar ? 'A criar encomendas…' : 'Confirmar encomenda'}
+              Continuar para pagamento
             </button>
           </fieldset>
         </form>
+      )}
+
+      {linhas.length > 0 && aEscolherPagamento && (
+        <>
+          <div className="card card-body mt-4">
+            <h2 className="h5">Resumo da compra</h2>
+            <p className="mb-1">Entrega: <strong>{tipoEntrega === 'entrega' ? 'Ao domicílio' : 'Levantamento no produtor'}</strong></p>
+            {tipoEntrega === 'entrega' && <p className="mb-1">Morada: <strong>{morada}</strong></p>}
+            <p className="mb-0">Total: <strong>{euro(total)}</strong></p>
+          </div>
+          <FormularioPagamento aoConfirmar={finalizarCompra}
+            aoVoltar={() => setAEscolherPagamento(false)} aProcessar={aEnviar} />
+        </>
       )}
     </>
   );

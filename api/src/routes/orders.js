@@ -7,6 +7,7 @@ const Review = require('../models/Review');
 const auth = require('../middleware/auth');
 const a = require('../utils/async');
 const erro = require('../utils/erro');
+const { metodoValido, criarPagamentoPago } = require('../services/pagamentos');
 
 // Valida as linhas recebidas e junta quantidades repetidas do mesmo produto.
 function validarLinhas(linhas) {
@@ -44,6 +45,10 @@ async function reporStock(reservas) {
 // POST /api/orders  (comprador)  -> 201
 router.post('/', auth('comprador'), a(async (req, res) => {
   const linhasPedidas = validarLinhas(req.body?.linhas);
+  const metodoPagamento = req.body?.pagamento?.metodo;
+  if (!metodoValido(metodoPagamento)) {
+    throw erro(400, 'Escolha cartão ou MB WAY como método de pagamento');
+  }
   const entregaRecebida = req.body?.entrega;
   // Só estes campos do objeto de entrega podem chegar ao modelo.
   const entrega = entregaRecebida ? {
@@ -96,7 +101,10 @@ router.post('/', auth('comprador'), a(async (req, res) => {
         unidade: produto.unidade,
         quantidade
       })),
-      entrega
+      entrega,
+      // O valor pago é sempre o virtual `total`, calculado a partir dos preços
+      // lidos da BD. O cliente só escolhe o método da simulação.
+      pagamento: criarPagamentoPago(metodoPagamento)
     });
 
     const io = req.app.get('io');
@@ -120,6 +128,54 @@ router.post('/', auth('comprador'), a(async (req, res) => {
     }
     throw err;
   }
+}));
+
+// POST /api/orders/:id/pagamento (comprador) -> pagar uma encomenda de leilão
+// ou outra encomenda que ainda esteja por pagar. A condição no update torna a
+// operação idempotente perante dois cliques concorrentes.
+router.post('/:id/pagamento', auth('comprador'), a(async (req, res) => {
+  const metodo = req.body?.metodo;
+  if (!metodoValido(metodo)) {
+    throw erro(400, 'Escolha cartão ou MB WAY como método de pagamento');
+  }
+
+  const pagamento = criarPagamentoPago(metodo);
+  const encomenda = await Order.findOneAndUpdate(
+    {
+      _id: req.params.id,
+      comprador: req.user.id,
+      'pagamento.estado': { $ne: 'pago' }
+    },
+    { $set: { pagamento } },
+    { new: true, runValidators: true }
+  )
+    .populate('comprador', 'nome email')
+    .populate('produtor', 'nome produtor.nomeExploracao produtor.localidade');
+
+  if (!encomenda) {
+    const existente = await Order.findById(req.params.id).select('comprador pagamento.estado');
+    if (!existente) throw erro(404, 'Encomenda não encontrada');
+    if (String(existente.comprador) !== String(req.user.id)) {
+      throw erro(403, 'Sem acesso a esta encomenda');
+    }
+    throw erro(409, 'A encomenda já está paga');
+  }
+
+  const io = req.app.get('io');
+  if (io) {
+    const evento = {
+      id: encomenda._id,
+      estado: encomenda.pagamento.estado,
+      metodo: encomenda.pagamento.metodo,
+      referencia: encomenda.pagamento.referencia,
+      total: encomenda.total
+    };
+    const produtorId = encomenda.produtor?._id || encomenda.produtor;
+    io.to(`user:${req.user.id}`).emit('pagamento-confirmado', evento);
+    io.to(`user:${produtorId}`).emit('pagamento-confirmado', evento);
+  }
+
+  res.json(encomenda);
 }));
 
 // GET /api/orders  -> 200 [encomendas do utilizador: como comprador ou como produtor]
@@ -190,6 +246,9 @@ router.patch('/:id/estado', auth('produtor'), a(async (req, res) => {
   if (!encomenda) throw erro(404, 'Encomenda não encontrada');
   if (encomenda.produtor.toString() !== String(req.user.id)) {
     throw erro(403, 'Só o produtor destinatário pode alterar esta encomenda');
+  }
+  if (encomenda.pagamento?.estado !== 'pago') {
+    throw erro(409, 'A encomenda ainda não foi paga');
   }
 
   const estadoSeguinte = encomenda.estadoSeguinte();

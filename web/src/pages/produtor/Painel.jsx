@@ -26,6 +26,7 @@ export default function PainelProdutor() {
 
   useEventoSocket('nova-encomenda', atualizarPainel);
   useEventoSocket('leilao-terminado', atualizarPainel);
+  useEventoSocket('pagamento-confirmado', atualizarPainel);
   useEventoSocket('nova-avaliacao', recarregarEstatisticas);
 
   const avancarEstado = async (encomenda) => {
@@ -129,10 +130,18 @@ export default function PainelProdutor() {
             <strong>{euros.format(encomenda.total)}</strong>
           </div>
           <EstadoEncomenda estado={encomenda.estado} />
+          <p className={`small fw-semibold mt-3 mb-0 ${encomenda.pagamento?.estado === 'pago' ? 'text-success' : 'text-warning'}`}>
+            {encomenda.pagamento?.estado === 'pago'
+              ? `Pagamento confirmado · ${encomenda.pagamento.metodo === 'mbway' ? 'MB WAY' : 'Cartão'}`
+              : 'A aguardar pagamento do comprador'}
+          </p>
           {ESTADO_SEGUINTE[encomenda.estado] && (
             <button type="button" className="btn btn-success align-self-start mt-3"
-              disabled={aAlterar === encomenda._id} onClick={() => avancarEstado(encomenda)}>
-              {aAlterar === encomenda._id
+              disabled={aAlterar === encomenda._id || encomenda.pagamento?.estado !== 'pago'}
+              onClick={() => avancarEstado(encomenda)}>
+              {encomenda.pagamento?.estado !== 'pago'
+                ? 'Aguardar pagamento'
+                : aAlterar === encomenda._id
                 ? 'A atualizar…'
                 : `Marcar como ${ESTADO_SEGUINTE[encomenda.estado]}`}
             </button>

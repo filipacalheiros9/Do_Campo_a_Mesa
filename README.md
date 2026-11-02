@@ -104,7 +104,7 @@ npm run seed
 npm test
 ```
 
-O teste usa a API REST e clientes Socket.io reais. Abrange autenticação, papéis, produtos, stock, encomendas, avaliações, moderação, notificações e duas licitações simultâneas com o mesmo valor. Os dados temporários criados pelo teste são removidos no final.
+O teste usa a API REST e clientes Socket.io reais. Abrange autenticação, papéis, produtos, stock, encomendas, pagamentos, avaliações, moderação, notificações, pagamentos concorrentes e duas licitações simultâneas com o mesmo valor. A execução final contém **63 verificações** e os dados temporários criados pelo teste são removidos no final.
 
 ## Notas da implementação
 
@@ -144,6 +144,8 @@ As áreas de visitante, comprador e produtor usam a API real. O administrador di
 - catálogo com pesquisa por categoria, produtor, localidade, época e modo de produção;
 - páginas públicas dos produtores com mapa, produtos e avaliações;
 - carrinho, entrega ou levantamento, encomendas e acompanhamento do estado;
+- checkout em dois passos com cartão ou MB WAY, sem guardar dados bancários;
+- pagamento posterior das encomendas ganhas em leilão e histórico integrado nas encomendas;
 - gestão de produtos, stock, preços, fotografias, perfil público e estatísticas do produtor;
 - criação de leilões, licitações atómicas e notificações através de Socket.IO;
 - backoffice Laravel para validação de produtores, moderação e visão global da plataforma.

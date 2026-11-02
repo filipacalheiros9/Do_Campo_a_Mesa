@@ -68,6 +68,8 @@ async function seed() {
       { produtor: mel._id, nome: 'Mel de castanheiro', categoria: 'Mel', preco: 7, unidade: '500 g', stock: 21 }
     ]);
 
+    const agora = Date.now();
+
     // As linhas guardam uma cópia dos dados comerciais no momento da compra.
     const [encomendaEntregue, encomendaPendente] = await Order.create([
       {
@@ -75,18 +77,25 @@ async function seed() {
         produtor: horta._id,
         linhas: [copiarLinha(kiwi, 2), copiarLinha(couve, 1)],
         estado: 'entregue',
-        entrega: { tipo: 'levantamento' }
+        entrega: { tipo: 'levantamento' },
+        pagamento: {
+          estado: 'pago', metodo: 'cartao', referencia: 'PAG-SEED-LOJA-001',
+          pagoEm: new Date(agora - minutos(180))
+        }
       },
       {
         comprador: restaurante._id,
         produtor: mel._id,
         linhas: [copiarLinha(melUrze, 2)],
         estado: 'pendente',
-        entrega: { tipo: 'entrega', morada: 'Rua do Mercado, 10, Braga' }
+        entrega: { tipo: 'entrega', morada: 'Rua do Mercado, 10, Braga' },
+        pagamento: {
+          estado: 'pago', metodo: 'mbway', referencia: 'PAG-SEED-LOJA-002',
+          pagoEm: new Date(agora - minutos(5))
+        }
       }
     ]);
 
-    const agora = Date.now();
     const [leilaoAtivo, leilaoAgendado, leilaoTerminado] = await Auction.create([
       {
         produtor: horta._id,
@@ -163,7 +172,11 @@ async function seed() {
       }],
       estado: 'entregue',
       origem: 'leilao',
-      leilao: leilaoTerminado._id
+      leilao: leilaoTerminado._id,
+      pagamento: {
+        estado: 'pago', metodo: 'cartao', referencia: 'PAG-SEED-LEILAO-001',
+        pagoEm: new Date(agora - minutos(80))
+      }
     });
     leilaoTerminado.encomenda = encomendaLeilao._id;
     await leilaoTerminado.save();
@@ -194,6 +207,7 @@ async function seed() {
     console.log(`  ${[admin, horta, mel, comprador, restaurante].length} utilizadores`);
     console.log('  5 produtos');
     console.log(`  ${[encomendaEntregue, encomendaPendente, encomendaLeilao].length} encomendas`);
+    console.log('  3 pagamentos');
     console.log(`  ${[leilaoAtivo, leilaoAgendado, leilaoTerminado].length} leilões`);
     console.log('  5 licitações');
     console.log('  2 avaliações');

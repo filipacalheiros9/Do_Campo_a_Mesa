@@ -50,7 +50,9 @@ async function obterOuCriarEncomenda(leilao) {
       unidade: 'lote',
       quantidade: 1
     }],
-    estado: 'confirmada',
+    // O vencedor ainda tem de escolher o método de pagamento na área de
+    // encomendas; o produtor só poderá confirmar depois desse passo.
+    estado: 'pendente',
     origem: 'leilao',
     leilao: leilao._id
   };

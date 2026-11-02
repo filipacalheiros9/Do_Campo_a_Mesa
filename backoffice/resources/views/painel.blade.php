@@ -104,8 +104,8 @@
 </tbody></table></div></details>
 
 <details><summary>Encomendas ({{ count($encomendas) }})</summary>
-<div class="tabela"><table><thead><tr><th>Referência</th><th>Comprador</th><th>Produtor</th><th>Estado</th><th>Origem</th></tr></thead><tbody>
-@foreach($encomendas as $item)<tr><td>#{{ strtoupper(substr($item['_id'], -6)) }}</td><td>{{ $item['comprador']['nome'] ?? '—' }}</td><td>{{ $item['produtor']['produtor']['nomeExploracao'] ?? ($item['produtor']['nome'] ?? '—') }}</td><td>{{ $item['estado'] }}</td><td>{{ $item['origem'] }}</td></tr>@endforeach
+<div class="tabela"><table><thead><tr><th>Referência</th><th>Comprador</th><th>Produtor</th><th>Estado</th><th>Pagamento</th><th>Origem</th></tr></thead><tbody>
+@foreach($encomendas as $item)<tr><td>#{{ strtoupper(substr($item['_id'], -6)) }}</td><td>{{ $item['comprador']['nome'] ?? '—' }}</td><td>{{ $item['produtor']['produtor']['nomeExploracao'] ?? ($item['produtor']['nome'] ?? '—') }}</td><td>{{ $item['estado'] }}</td><td>{{ ($item['pagamento']['estado'] ?? 'por_pagar') === 'pago' ? ('Pago · '.strtoupper($item['pagamento']['metodo'] ?? '')) : 'Por pagar' }}</td><td>{{ $item['origem'] }}</td></tr>@endforeach
 </tbody></table></div></details>
 
 <details><summary>Leilões ({{ count($leiloes) }})</summary>

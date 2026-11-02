@@ -173,6 +173,16 @@ async function limparDadosCriados() {
   }
 }
 
+async function definirPagamentoDaEncomenda(encomendaId, pagamento) {
+  if (!process.env.MONGODB_URI) throw new Error('MONGODB_URI não está definida');
+  await mongoose.connect(process.env.MONGODB_URI);
+  try {
+    await Order.updateOne({ _id: encomendaId }, { $set: { pagamento } });
+  } finally {
+    await mongoose.disconnect();
+  }
+}
+
 async function executar() {
   console.log(`\nTeste E2E em ${BASE_URL}`);
   console.log('Pré-condição: API ligada e base reposta com `npm run seed`.\n');
@@ -320,7 +330,8 @@ async function executar() {
     token: tokenA,
     corpo: {
       linhas: [{ produto: produtoId, quantidade: 6 }],
-      entrega: { tipo: 'levantamento' }
+      entrega: { tipo: 'levantamento' },
+      pagamento: { metodo: 'cartao' }
     }
   });
   verificar(semStock.status === 409, 'stock insuficiente -> 409');
@@ -333,7 +344,8 @@ async function executar() {
     token: tokenA,
     corpo: {
       linhas: [{ produto: produtoId, quantidade: 2 }],
-      entrega: { tipo: 'levantamento' }
+      entrega: { tipo: 'levantamento' },
+      pagamento: { metodo: 'mbway' }
     }
   });
   verificar(
@@ -342,6 +354,17 @@ async function executar() {
   );
   const encomendaId = exigir(encomendaCriada.dados?._id, 'Não foi possível criar a encomenda E2E.');
   criados.encomendas.push(encomendaId);
+  verificar(
+    encomendaCriada.dados?.pagamento?.estado === 'pago'
+      && encomendaCriada.dados?.pagamento?.metodo === 'mbway'
+      && /^PAG-\d{8}-[A-F0-9]{8}$/.test(encomendaCriada.dados?.pagamento?.referencia || ''),
+    'checkout guarda apenas método, estado e referência do pagamento'
+  );
+
+  const pagamentoDuplicado = await pedido(`/orders/${encomendaId}/pagamento`, {
+    metodo: 'POST', token: tokenA, corpo: { metodo: 'cartao' }
+  });
+  verificar(pagamentoDuplicado.status === 409, 'pagamento aprovado não pode ser duplicado -> 409');
 
   const produtoReservado = await pedido(`/products/${produtoId}`);
   verificar(produtoReservado.dados?.stock === 3, 'stock reservado de forma atómica (5 -> 3)');
@@ -361,6 +384,44 @@ async function executar() {
     encomendasProdutor.status === 200
       && encomendasProdutor.dados?.some((item) => item._id === encomendaId),
     'produtor consulta as encomendas recebidas'
+  );
+
+  // Reabre apenas o pagamento do registo E2E para validar o fluxo usado pelas
+  // encomendas de leilão, que nascem por pagar.
+  await definirPagamentoDaEncomenda(encomendaId, { estado: 'por_pagar' });
+
+  const confirmacaoSemPagamento = await pedido(`/orders/${encomendaId}/estado`, {
+    metodo: 'PATCH', token: tokenProdutor, corpo: { estado: 'confirmada' }
+  });
+  verificar(confirmacaoSemPagamento.status === 409, 'produtor não confirma encomenda por pagar -> 409');
+
+  const pagamentoAlheio = await pedido(`/orders/${encomendaId}/pagamento`, {
+    metodo: 'POST', token: tokenB, corpo: { metodo: 'cartao' }
+  });
+  verificar(pagamentoAlheio.status === 403, 'comprador não paga encomenda de terceiros -> 403');
+
+  const metodoInvalido = await pedido(`/orders/${encomendaId}/pagamento`, {
+    metodo: 'POST', token: tokenA, corpo: { metodo: 'dinheiro' }
+  });
+  verificar(metodoInvalido.status === 400, 'método de pagamento inválido -> 400');
+
+  const [tentativaPagamentoA, tentativaPagamentoB] = await Promise.all([
+    pedido(`/orders/${encomendaId}/pagamento`, {
+      metodo: 'POST', token: tokenA, corpo: { metodo: 'cartao' }
+    }),
+    pedido(`/orders/${encomendaId}/pagamento`, {
+      metodo: 'POST', token: tokenA, corpo: { metodo: 'mbway' }
+    })
+  ]);
+  const pagamentosAceites = [tentativaPagamentoA, tentativaPagamentoB]
+    .filter((tentativa) => tentativa.status === 200);
+  const pagamentosRejeitados = [tentativaPagamentoA, tentativaPagamentoB]
+    .filter((tentativa) => tentativa.status === 409);
+  verificar(
+    pagamentosAceites.length === 1
+      && pagamentosRejeitados.length === 1
+      && pagamentosAceites[0].dados?.pagamento?.estado === 'pago',
+    'dois pagamentos simultâneos: apenas um é aceite'
   );
 
   const estadoAdiantado = await pedido(`/orders/${encomendaId}/estado`, {

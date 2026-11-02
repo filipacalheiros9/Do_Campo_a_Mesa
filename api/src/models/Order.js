@@ -3,6 +3,8 @@
 const { Schema, model, Types } = require('mongoose');
 
 const ESTADOS = ['pendente', 'confirmada', 'pronta', 'entregue'];
+const ESTADOS_PAGAMENTO = ['por_pagar', 'pago'];
+const METODOS_PAGAMENTO = ['cartao', 'mbway'];
 
 // Cada linha é guardada dentro da encomenda e conserva os dados comerciais da compra.
 const linhaSchema = new Schema({
@@ -23,6 +25,27 @@ const linhaSchema = new Schema({
   }
 }, { _id: false });
 
+// O pagamento é embebido porque existe no máximo um por encomenda e é sempre
+// apresentado juntamente com ela. Nunca são guardados números de cartão, CVV
+// ou números de telefone usados na simulação do frontend.
+const pagamentoSchema = new Schema({
+  estado: { type: String, enum: ESTADOS_PAGAMENTO, default: 'por_pagar', required: true },
+  metodo: {
+    type: String,
+    enum: METODOS_PAGAMENTO,
+    required() { return this.estado === 'pago'; }
+  },
+  referencia: {
+    type: String,
+    trim: true,
+    required() { return this.estado === 'pago'; }
+  },
+  pagoEm: {
+    type: Date,
+    required() { return this.estado === 'pago'; }
+  }
+}, { _id: false });
+
 const orderSchema = new Schema({
   comprador: { type: Types.ObjectId, ref: 'User', required: true },
   produtor: { type: Types.ObjectId, ref: 'User', required: true },
@@ -40,6 +63,11 @@ const orderSchema = new Schema({
     morada: String
   },
   origem: { type: String, enum: ['loja', 'leilao'], default: 'loja', required: true },
+  pagamento: {
+    type: pagamentoSchema,
+    default: () => ({ estado: 'por_pagar' }),
+    required: true
+  },
   leilao: {
     type: Types.ObjectId,
     ref: 'Auction',
@@ -70,9 +98,12 @@ orderSchema.methods.podeTransitarPara = function podeTransitarPara(novoEstado) {
 };
 
 orderSchema.statics.ESTADOS = ESTADOS;
+orderSchema.statics.ESTADOS_PAGAMENTO = ESTADOS_PAGAMENTO;
+orderSchema.statics.METODOS_PAGAMENTO = METODOS_PAGAMENTO;
 
 orderSchema.index({ comprador: 1, createdAt: -1 });
 orderSchema.index({ produtor: 1, createdAt: -1 });
+orderSchema.index({ 'pagamento.referencia': 1 }, { unique: true, sparse: true });
 // Um leilão só pode originar uma encomenda, mesmo com várias instâncias da API.
 orderSchema.index({ leilao: 1 }, { unique: true, sparse: true });
 
