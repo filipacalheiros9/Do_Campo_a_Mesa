@@ -225,20 +225,34 @@ A API envia a hora do servidor no evento `estado`. O cliente calcula a diferenç
 
 ## 8. Deployment na Cloud
 
-O ambiente público foi criado no Azure, na região **Spain Central**, usando a subscrição Azure for Students. Os três componentes web partilham um único plano Linux B1. Esta solução mantém os processos independentes, mas evita pagar três planos de computação.
+### 8.1 Serviços, planos e região
 
-| Componente | Serviço previsto | Modelo | Estado |
+O ambiente público foi criado no Microsoft Azure, na região **Spain Central**, usando a subscrição Azure for Students. Esta região foi escolhida por estar autorizada pela política da subscrição e por permitir manter o plano de computação e o armazenamento na mesma localização. Os três componentes web partilham um único **Azure App Service Plan Linux B1**. Cada componente continua a ser um Web App independente, mas a partilha do plano evita pagar três recursos de computação.
+
+| Componente | Serviço e plano | Modelo | Estado |
 |---|---|---|---|
-| SPA React | Azure App Service, build Vite servido por Node.js | PaaS | publicado com HTTPS e fallback para `index.html` |
-| API Node.js + Socket.IO | Azure App Service com WebSockets ativos | PaaS | publicada e validada com 63 testes E2E |
-| Backoffice Laravel | Azure App Service PHP separado | PaaS | publicado e validado através do login público |
-| Base de dados | MongoDB Atlas M0 | DBaaS | ligada por `MONGODB_URI` guardada em App Settings |
-| Fotografias | Azure Blob Storage (`produtos`) | armazenamento gerido | recurso criado e configurado na API |
+| SPA React | Web App `dcm-web-fc2026`, no plano Linux B1; build Vite servido por Node.js | PaaS | publicada com fallback para `index.html` |
+| API Node.js + Socket.IO | Web App `dcm-api-fc2026`, no mesmo plano B1 | PaaS | publicada com WebSockets e Always On ativos |
+| Backoffice Laravel | Web App `dcm-admin-fc2026`, no mesmo plano B1 | PaaS | publicado com Nginx/PHP e acesso através do login da SPA |
+| Base de dados | MongoDB Atlas M0 (Free) | DBaaS | ligada à API através de `MONGODB_URI` |
+| Fotografias | Azure Blob Storage Standard LRS, contentor `produtos`, em Spain Central | armazenamento gerido | upload e leitura validados em produção |
 | Geocodificação | Nominatim/OpenStreetMap | serviço externo | implementado |
 
-O frontend foi compilado com os URLs públicos da API e do backoffice em `VITE_API_URL` e `VITE_ADMIN_URL`. A API recebe `MONGODB_URI`, `JWT_SECRET`, `CLIENT_URL`, `STORAGE_CONN` e `STORAGE_CONTAINER` através de App Settings, sem guardar segredos no repositório. O backoffice usa `APP_URL`, `APP_KEY`, `API_URL` e `SPA_URL` pelo mesmo mecanismo. A origem CORS coincide com o URL público da SPA, os três App Services forçam HTTPS, o Laravel confia nos cabeçalhos do proxy Azure necessários para preservar o esquema HTTPS e os WebSockets estão ativos no serviço da API.
+O MongoDB Atlas encontra-se fora do grupo de recursos Azure. O acesso de rede foi configurado para aceitar as ligações de saída do App Service e continua protegido pelas credenciais do utilizador da base de dados. A ligação foi confirmada através dos percursos funcionais e do teste E2E executado contra a API publicada.
 
-A intenção inicial era publicar a SPA no Azure Static Web Apps. Contudo, as regiões permitidas pela política da subscrição de estudante não coincidiam com as regiões disponíveis nesse serviço. Como alternativa, a SPA pré-compilada foi publicada num terceiro Web App dentro do mesmo plano B1, sem criar outro plano de computação. O pequeno servidor Node.js incluído no deployment serve os ficheiros de `dist/` e devolve `index.html` nas rotas internas, garantindo o funcionamento do React Router após atualizar a página.
+### 8.2 Configuração de produção
+
+O frontend foi compilado com os URLs públicos da API e do backoffice em `VITE_API_URL` e `VITE_ADMIN_URL`. A API recebe `MONGODB_URI`, `JWT_SECRET`, `CLIENT_URL`, `STORAGE_CONN` e `STORAGE_CONTAINER` através de **App Settings**, sem guardar segredos no repositório. O backoffice usa `APP_URL`, `APP_KEY`, `API_URL` e `SPA_URL` pelo mesmo mecanismo.
+
+- **HTTPS:** a opção `httpsOnly` está ativa nos três Web Apps. O Express e o Laravel confiam nos cabeçalhos do proxy Azure necessários para reconhecer o esquema original e gerar redirecionamentos HTTPS corretos.
+- **CORS:** a API autoriza a origem definida em `CLIENT_URL`, que corresponde exclusivamente a `https://dcm-web-fc2026.azurewebsites.net`. O preflight da origem pública foi aceite e uma origem externa foi recusada.
+- **WebSockets:** `webSocketsEnabled` e `Always On` estão ativos no Web App da API. O Socket.IO usa o mesmo URL HTTPS, promovendo a ligação para WSS, e foi validado através de notificações e licitações em tempo real.
+- **Blob Storage:** quando `STORAGE_CONN` está definida, o serviço de imagens envia o `buffer` recebido pelo Multer para o contentor `produtos`, atribui um nome aleatório, conserva o tipo MIME e guarda no documento apenas o URL do blob. Sem esta variável, o desenvolvimento continua a usar `api/uploads/`.
+- **Fallback da SPA:** o pequeno servidor Node.js do Web App serve os ficheiros de `dist/` e devolve `index.html` para rotas que não correspondam a ficheiros. Assim, atualizar diretamente `/leiloes`, `/encomendas` ou outra rota do React Router não produz um erro 404.
+
+A intenção inicial era publicar a SPA no Azure Static Web Apps. Contudo, as regiões permitidas pela política da subscrição de estudante não coincidiam com as regiões disponíveis nesse serviço. Como alternativa, a SPA pré-compilada foi publicada num terceiro Web App dentro do plano B1 existente, sem criar outro plano de computação.
+
+### 8.3 Custos estimados
 
 Foi escolhido o menor plano usado no projeto que suporta a demonstração contínua dos WebSockets. O custo do plano App Service é partilhado pelos três Web Apps e fica coberto pelos créditos da subscrição de estudante durante o período de avaliação. O MongoDB usa o nível gratuito e o Blob Storage é faturado pelo reduzido volume efetivamente guardado.
 
@@ -250,14 +264,27 @@ Foi escolhido o menor plano usado no projeto que suporta a demonstração contí
 
 O valor do plano B1 foi consultado na [Azure Retail Prices API](https://prices.azure.com/api/retail/prices) em 2 de novembro de 2026. É apenas uma estimativa mensal: o preço efetivo pode variar e o portal deve ser consultado antes da defesa. Parar os Web Apps não elimina o custo do plano; para deixar de o consumir é necessário reduzir o plano ou eliminar o grupo de recursos depois da avaliação.
 
-URLs públicas do deployment:
+### 8.4 URLs públicas e validação
 
 - Aplicação e login: https://dcm-web-fc2026.azurewebsites.net
 - API/health: https://dcm-api-fc2026.azurewebsites.net/api/health
 - Swagger UI: https://dcm-api-fc2026.azurewebsites.net/api-docs
 - Backoffice (endereço técnico; o acesso normal é encaminhado pela SPA): https://dcm-admin-fc2026.azurewebsites.net
 
-Na verificação final, os cinco endereços testados — raiz da SPA, rota interna da SPA, health check, Swagger UI e login do backoffice — responderam com HTTP 200. O preflight CORS devolveu `Access-Control-Allow-Origin` apenas para o domínio público da SPA e recusou uma origem externa. Foi ainda repetido o percurso real do administrador: login na SPA, envio autenticado por `POST` e chegada direta ao painel Laravel em HTTPS, sem segundo formulário de login. O painel técnico apresentou Azure App Service, API, Socket.IO, MongoDB Atlas, Blob Storage e Swagger como operacionais. Foi também enviado um PNG de 87 020 bytes pela rota de imagem de produto; a API devolveu um URL no contentor `produtos` e o blob respondeu com HTTP 200.
+Na verificação final, a raiz da SPA, uma rota interna, o health check e o Swagger UI responderam com HTTP 200. O endereço técnico do backoffice encaminhou corretamente para o login único da SPA quando não existia sessão. Foi ainda repetido o percurso real do administrador: login na SPA, envio autenticado por `POST` e chegada direta ao painel Laravel em HTTPS, sem segundo formulário de login. O painel técnico apresentou Azure App Service, API, Socket.IO, MongoDB Atlas, Blob Storage e Swagger como operacionais. Foi também enviado um PNG de 87 020 bytes pela rota de imagem de produto; a API devolveu um URL no contentor `produtos` e o blob respondeu com HTTP 200.
+
+![Catálogo da SPA no ambiente público Azure](images/cloud-ambiente-publicado.png)
+
+*Figura 7 — Ambiente publicado em `dcm-web-fc2026.azurewebsites.net`, apresentando o catálogo obtido pela API ligada ao MongoDB Atlas.*
+
+### 8.5 Dificuldades encontradas no deployment
+
+- **Restrições regionais da subscrição:** a política do Azure for Students não permitiu combinar as regiões disponíveis no Static Web Apps com os restantes recursos. A SPA passou para um Web App Node.js dentro do plano B1 já existente.
+- **Raiz pública do Laravel:** o App Service apontava inicialmente para a raiz do projeto em vez de `public/`. Foi adicionada uma configuração Nginx própria e um comando de arranque que ativa essa configuração antes de servir o backoffice.
+- **HTTPS atrás do proxy Azure:** o Laravel gerava inicialmente um redirecionamento para HTTP. A aplicação passou a confiar apenas nos cabeçalhos de proxy conhecidos e `APP_URL` foi definido com o endereço HTTPS público.
+- **Sessões entre aplicações:** SPA e Laravel usam domínios distintos e não podem partilhar diretamente cookies. O JWT é transferido por `POST`, validado novamente na API e convertido numa sessão Laravel; o logout termina também a sessão persistida na SPA.
+- **Arranque e latência do App Service:** os primeiros pedidos após um deployment demoravam mais durante o aquecimento. Foi ativado Always On e os testes E2E em produção usam um timeout de 30 segundos para tolerar a latência do plano B1.
+- **Acesso ao Atlas e imagens:** foi necessário autorizar a origem de rede do serviço cloud no Atlas e mover as imagens do armazenamento local para Blob Storage. A abstração do serviço de imagens preservou o funcionamento local e permitiu selecionar o destino apenas através das variáveis de ambiente.
 
 ## 9. Testes e validação
 
@@ -320,8 +347,6 @@ Esta validação confirma o encaminhamento por papel, a proteção das rotas e a
 
 ### Trabalho futuro
 
-- concluir e documentar o deployment, custos e URLs públicos;
-- testar Socket.IO e CORS no domínio final e impedir suspensão do serviço durante a defesa;
 - reservar stock no momento da criação de leilões associados a produtos e libertá-lo quando não existirem licitações;
 - utilizar Redis Adapter e afinidade de sessão caso a API passe a ter várias instâncias;
 - substituir a persistência do JWT em `localStorage` por cookies seguros;
