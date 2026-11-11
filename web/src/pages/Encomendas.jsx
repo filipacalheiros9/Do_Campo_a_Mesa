@@ -1,6 +1,7 @@
 // Comprador: acompanhamento das encomendas com atualização em tempo real.
 import { useState } from 'react';
 import EstadoEncomenda from '../components/EstadoEncomenda.jsx';
+import FiltrosEncomendas, { FILTROS_ENCOMENDAS_INICIAIS, filtrarEncomendas } from '../components/FiltrosEncomendas.jsx';
 import FormularioAvaliacao from '../components/FormularioAvaliacao.jsx';
 import FormularioPagamento from '../components/FormularioPagamento.jsx';
 import { api } from '../api/client.js';
@@ -16,7 +17,9 @@ export default function Encomendas() {
   const [aPagar, setAPagar] = useState('');
   const [aProcessar, setAProcessar] = useState(false);
   const [erroPagamento, setErroPagamento] = useState('');
+  const [filtros, setFiltros] = useState(FILTROS_ENCOMENDAS_INICIAIS);
   const encomendas = dados || [];
+  const encomendasVisiveis = filtrarEncomendas(encomendas, filtros);
 
   useEventoSocket('encomenda-atualizada', (evento) => {
     setDados((lista) => lista?.map((encomenda) => (
@@ -59,11 +62,17 @@ export default function Encomendas() {
         </p>
       </header>
       {erro && <div className="alert alert-danger">{erro}</div>}
+      {encomendas.length > 0 && (
+        <FiltrosEncomendas filtros={filtros} aoAlterar={setFiltros} />
+      )}
       {!encomendas.length && !erro && (
         <div className="alert alert-light border">Ainda não tem encomendas.</div>
       )}
+      {encomendas.length > 0 && !encomendasVisiveis.length && (
+        <div className="alert alert-light border" role="status">Nenhuma encomenda corresponde aos filtros.</div>
+      )}
 
-      {encomendas.map((encomenda) => {
+      {encomendasVisiveis.map((encomenda) => {
         const produtor = encomenda.produtor;
         const nomeProdutor = produtor?.produtor?.nomeExploracao || produtor?.nome || 'Produtor';
         const produtosAvaliados = new Set(encomenda.avaliacoes?.produtos || []);

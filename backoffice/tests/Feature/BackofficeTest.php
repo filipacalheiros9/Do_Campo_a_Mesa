@@ -87,6 +87,19 @@ class BackofficeTest extends TestCase
             ->assertSessionMissing('token');
     }
 
+    public function test_um_token_expirado_no_painel_encaminha_para_o_fim_de_sessao_da_spa(): void
+    {
+        Http::preventStrayRequests();
+        Http::fake(['*/api/admin/estatisticas' => Http::response(['erro' => 'Token expirado'], 401)]);
+
+        $this->withSession([
+            'token' => 'jwt-expirado',
+            'utilizador' => ['nome' => 'Admin', 'papel' => 'admin'],
+        ])->get('/')
+            ->assertRedirect('http://localhost:5173/sair')
+            ->assertSessionMissing('token');
+    }
+
     public function test_o_painel_escapa_conteudo_recebido_da_api(): void
     {
         Http::preventStrayRequests();

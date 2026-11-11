@@ -31,7 +31,7 @@
                         <small>Administrador</small>
                     </span>
                 </div>
-                <form method="post" action="{{ route('sair') }}">@csrf<button>Sair</button></form>
+                <form method="post" action="{{ route('sair') }}">@csrf<button type="submit" class="perigo">Sair</button></form>
             </div>
         @endif
     </header>

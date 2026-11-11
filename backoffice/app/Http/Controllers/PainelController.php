@@ -4,9 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Services\ApiAdmin;
 use Illuminate\Http\Client\RequestException;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Http\JsonResponse;
 use Illuminate\View\View;
 use Throwable;
 
@@ -29,8 +29,9 @@ class PainelController extends Controller
         } catch (Throwable $erro) {
             if ($erro instanceof RequestException && $erro->response->status() === 401) {
                 $request->session()->invalidate();
+                $request->session()->regenerateToken();
 
-                return redirect()->route('login')->withErrors(['email' => 'A sessão terminou. Inicie sessão novamente.']);
+                return redirect()->away(rtrim((string) config('services.spa.url'), '/').'/sair');
             }
 
             return back()->withErrors(['api' => 'Não foi possível obter os dados da API.']);
@@ -73,8 +74,8 @@ class PainelController extends Controller
         $api->alterar("/api/admin/reviews/{$id}", ['estado' => $dados['estado']], $request->session()->get('token'));
 
         return back()->with('sucesso', $dados['estado'] === 'aprovada'
-            ? 'Avaliação mantida.'
-            : 'Avaliação recusada.');
+            ? 'Denúncia recusada. A avaliação continua visível.'
+            : 'Denúncia aceite. A avaliação foi ocultada.');
     }
 
     public function eliminarUtilizador(string $id, Request $request, ApiAdmin $api): RedirectResponse

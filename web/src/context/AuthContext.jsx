@@ -1,10 +1,12 @@
 // Estado global da sessão (utilizador + token)
-import { createContext, useContext, useEffect, useRef, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { api } from '../api/client.js';
 
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
+  const navigate = useNavigate();
   const [sessao, setSessao] = useState(() => {
     try { return JSON.parse(localStorage.getItem('sessao')) || null; } catch { return null; }
   });
@@ -29,11 +31,12 @@ export function AuthProvider({ children }) {
     });
   }
 
-  function sair() {
+  const sair = useCallback(() => {
     tokenAtivo.current = null;
     localStorage.removeItem('sessao');
     setSessao(null);
-  }
+    navigate('/', { replace: true });
+  }, [navigate]);
 
   function guardarSessao(nova) {
     tokenAtivo.current = nova?.token || null;

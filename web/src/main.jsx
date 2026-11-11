@@ -11,16 +11,16 @@ import './styles/main.scss';
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    <AuthProvider>
-      <SocketProvider>
-        <NotificacoesProvider>
-          <CarrinhoProvider>
-            <BrowserRouter>
+    <BrowserRouter>
+      <AuthProvider>
+        <SocketProvider>
+          <NotificacoesProvider>
+            <CarrinhoProvider>
               <App />
-            </BrowserRouter>
-          </CarrinhoProvider>
-        </NotificacoesProvider>
-      </SocketProvider>
-    </AuthProvider>
+            </CarrinhoProvider>
+          </NotificacoesProvider>
+        </SocketProvider>
+      </AuthProvider>
+    </BrowserRouter>
   </React.StrictMode>
 );

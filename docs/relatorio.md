@@ -48,7 +48,7 @@ O backoffice segue MVC e Blade. Os controllers utilizam `ApiAdmin`, um serviço 
 
 ![Painel global do backoffice Laravel](images/backoffice-painel.png)
 
-*Figura 2 — Painel global do backoffice Laravel, com indicadores, estado dos serviços e gestão da plataforma.*
+*Figura 2 — Painel global do backoffice Laravel em desenvolvimento local, com indicadores, estado dos serviços e filtros de utilizadores, encomendas e leilões.*
 
 ## 3. Frontend e SPA
 
@@ -83,7 +83,11 @@ O checkout está dividido em confirmação da entrega e pagamento. O comprador e
 
 ![Área autenticada de encomendas](images/spa-encomendas.png)
 
-*Figura 4 — Área autenticada do comprador, mostrando encomendas normais e uma encomenda criada a partir de um leilão.*
+*Figura 4 — Área de encomendas do comprador, com filtros por pagamento, data e estado da encomenda. Está selecionado o método MB WAY.*
+
+![Painel do produtor com filtros de leilões e encomendas](images/spa-painel-produtor.png)
+
+*Figura 5 — Painel do produtor, com indicadores de vendas, alertas de stock e filtros aplicados às listas de leilões e encomendas.*
 
 ### 3.3 Routing e controlo de acesso
 
@@ -138,7 +142,7 @@ A especificação `api/openapi.yaml` documenta os caminhos, parâmetros, corpos,
 
 ![Documentação interativa da API](images/api-swagger.png)
 
-*Figura 5 — Swagger UI gerado a partir da especificação OpenAPI, com os recursos e operações REST disponíveis.*
+*Figura 6 — Swagger UI gerado a partir da especificação OpenAPI, com os recursos e operações REST disponíveis.*
 
 ## 5. Modelo de dados
 
@@ -221,7 +225,7 @@ A API envia a hora do servidor no evento `estado`. O cliente calcula a diferenç
 
 ![Sala de leilão em tempo real](images/spa-sala-leilao.png)
 
-*Figura 6 — Sala de leilão autenticada, com presença, contagem decrescente, valor mínimo e histórico atualizado por Socket.IO.*
+*Figura 7 — Sala de leilão autenticada, com presença, contagem decrescente, valor mínimo e histórico atualizado por Socket.IO.*
 
 ## 8. Deployment na Cloud
 
@@ -275,7 +279,7 @@ Na verificação final, a raiz da SPA, uma rota interna, o health check e o Swag
 
 ![Catálogo da SPA no ambiente público Azure](images/cloud-ambiente-publicado.png)
 
-*Figura 7 — Ambiente publicado em `dcm-web-fc2026.azurewebsites.net`, apresentando o catálogo obtido pela API ligada ao MongoDB Atlas.*
+*Figura 8 — Ambiente publicado em `dcm-web-fc2026.azurewebsites.net`, apresentando o catálogo obtido pela API ligada ao MongoDB Atlas.*
 
 ### 8.5 Dificuldades encontradas no deployment
 

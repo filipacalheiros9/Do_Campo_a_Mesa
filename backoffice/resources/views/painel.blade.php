@@ -74,9 +74,9 @@
                 <span>{{ $avaliacao['denuncias'] ?? 0 }} denúncia(s)</span></div>
             <div class="acoes">
                 <form method="post" action="{{ route('avaliacoes.moderar', $avaliacao['_id']) }}">@csrf @method('patch')
-                    <input type="hidden" name="estado" value="aprovada"><button class="primario">Manter</button></form>
+                    <input type="hidden" name="estado" value="recusada"><button class="perigo">Manter denúncia</button></form>
                 <form method="post" action="{{ route('avaliacoes.moderar', $avaliacao['_id']) }}">@csrf @method('patch')
-                    <input type="hidden" name="estado" value="recusada"><button class="perigo">Recusar</button></form>
+                    <input type="hidden" name="estado" value="aprovada"><button>Recusar denúncia</button></form>
             </div>
         </article>
     @empty <p class="secundario">Não existem avaliações denunciadas.</p> @endforelse
@@ -88,9 +88,27 @@
     <span class="secundario">Consulte os utilizadores, as encomendas e os leilões registados.</span>
 </div>
 
-<details open><summary>Utilizadores ({{ count($utilizadores) }})</summary>
+@php
+    $limiteRecentes = 5;
+@endphp
+<details open data-listagem="{{ $limiteRecentes }}"><summary>Utilizadores ({{ count($utilizadores) }})</summary>
+<div class="filtros-listagem">
+    <label>Tipo de utilizador
+        <select data-filtro="papel">
+            <option value="">Todos</option>
+            <option value="comprador">Comprador</option>
+            <option value="produtor">Produtor</option>
+            <option value="admin">Administrador</option>
+        </select>
+    </label>
+    <label>Nome <input type="search" data-filtro="nome"></label>
+    <button type="button" class="perigo" data-limpar disabled>Limpar filtros</button>
+</div>
+<p class="secundario sem-resultados" data-sem-resultados role="status" @if(count($utilizadores)) hidden @endif>Nenhum utilizador encontrado.</p>
 <div class="tabela"><table><thead><tr><th>Nome</th><th>Email</th><th>Papel</th><th>Registo</th><th>Ações</th></tr></thead><tbody>
-@foreach($utilizadores as $item)<tr><td>{{ $item['nome'] }}</td><td>{{ $item['email'] }}</td><td>{{ $item['papel'] }}</td><td>{{ \Carbon\Carbon::parse($item['createdAt'])->format('d/m/Y H:i') }}</td><td>
+@foreach($utilizadores as $item)
+<tr data-papel="{{ $item['papel'] }}" data-nome="{{ $item['nome'] }}" @if($loop->index >= $limiteRecentes) hidden @endif>
+<td>{{ $item['nome'] }}</td><td>{{ $item['email'] }}</td><td>{{ $item['papel'] }}</td><td>{{ \Carbon\Carbon::parse($item['createdAt'])->format('d/m/Y H:i') }}</td><td>
     @if(($item['_id'] ?? null) !== session('utilizador._id'))
         <form method="post" action="{{ route('utilizadores.eliminar', $item['_id']) }}"
               onsubmit="return confirm('Tem a certeza de que pretende eliminar o perfil de {{ addslashes($item['nome']) }}?');">
@@ -103,20 +121,84 @@
 </td></tr>@endforeach
 </tbody></table></div></details>
 
-<details><summary>Encomendas ({{ count($encomendas) }})</summary>
+<details data-listagem="{{ $limiteRecentes }}"><summary>Encomendas ({{ count($encomendas) }})</summary>
+<div class="filtros-listagem">
+    <label>Nome do produtor <input type="search" data-filtro="produtor"></label>
+    <label>Nome do comprador <input type="search" data-filtro="comprador"></label>
+    <button type="button" class="perigo" data-limpar disabled>Limpar filtros</button>
+</div>
+<p class="secundario sem-resultados" data-sem-resultados role="status" @if(count($encomendas)) hidden @endif>Nenhuma encomenda encontrada.</p>
 <div class="tabela"><table><thead><tr><th>Referência</th><th>Comprador</th><th>Produtor</th><th>Estado</th><th>Pagamento</th><th>Origem</th></tr></thead><tbody>
-@foreach($encomendas as $item)<tr><td>#{{ strtoupper(substr($item['_id'], -6)) }}</td><td>{{ $item['comprador']['nome'] ?? '—' }}</td><td>{{ $item['produtor']['produtor']['nomeExploracao'] ?? ($item['produtor']['nome'] ?? '—') }}</td><td>{{ $item['estado'] }}</td><td>{{ ($item['pagamento']['estado'] ?? 'por_pagar') === 'pago' ? ('Pago · '.strtoupper($item['pagamento']['metodo'] ?? '')) : 'Por pagar' }}</td><td>{{ $item['origem'] }}</td></tr>@endforeach
+@foreach($encomendas as $item)
+@php
+    $nomeComprador = $item['comprador']['nome'] ?? '';
+    $nomeProdutor = $item['produtor']['nome'] ?? '';
+    $nomeExploracao = $item['produtor']['produtor']['nomeExploracao'] ?? '';
+@endphp
+<tr data-comprador="{{ $nomeComprador }}" data-produtor="{{ trim($nomeExploracao.' '.$nomeProdutor) }}" @if($loop->index >= $limiteRecentes) hidden @endif>
+    <td>#{{ strtoupper(substr($item['_id'], -6)) }}</td><td>{{ $nomeComprador ?: '—' }}</td><td>{{ $nomeExploracao ?: ($nomeProdutor ?: '—') }}</td><td>{{ $item['estado'] }}</td><td>{{ ($item['pagamento']['estado'] ?? 'por_pagar') === 'pago' ? ('Pago · '.strtoupper($item['pagamento']['metodo'] ?? '')) : 'Por pagar' }}</td><td>{{ $item['origem'] }}</td>
+</tr>
+@endforeach
 </tbody></table></div></details>
 
-<details><summary>Leilões ({{ count($leiloes) }})</summary>
-<div class="tabela"><table><thead><tr><th>Lote</th><th>Produtor</th><th>Estado</th><th>Licitações</th><th>Termina</th></tr></thead><tbody>
-@foreach($leiloes as $item)<tr><td>{{ $item['lote'] }}</td><td>{{ $item['produtor']['produtor']['nomeExploracao'] ?? ($item['produtor']['nome'] ?? '—') }}</td><td>{{ $item['estado'] }}</td><td>{{ $item['numLicitacoes'] }}</td><td>{{ \Carbon\Carbon::parse($item['terminaEm'])->format('d/m/Y H:i') }}</td></tr>@endforeach
+<details data-listagem="{{ $limiteRecentes }}"><summary>Leilões ({{ count($leiloes) }})</summary>
+<div class="filtros-listagem">
+    <label>Data de início <input type="date" data-filtro="data"></label>
+    <button type="button" class="perigo" data-limpar disabled>Limpar filtros</button>
+</div>
+<p class="secundario sem-resultados" data-sem-resultados role="status" @if(count($leiloes)) hidden @endif>Nenhum leilão encontrado.</p>
+<div class="tabela"><table><thead><tr><th>Lote</th><th>Produtor</th><th>Estado</th><th>Licitações</th><th>Começa</th><th>Termina</th></tr></thead><tbody>
+@foreach($leiloes as $item)
+@php
+    $inicio = isset($item['iniciaEm']) ? \Carbon\Carbon::parse($item['iniciaEm'])->setTimezone('Europe/Lisbon') : null;
+@endphp
+<tr data-data="{{ $inicio?->format('Y-m-d') }}" @if($loop->index >= $limiteRecentes) hidden @endif>
+    <td>{{ $item['lote'] }}</td><td>{{ $item['produtor']['produtor']['nomeExploracao'] ?? ($item['produtor']['nome'] ?? '—') }}</td><td>{{ $item['estado'] }}</td><td>{{ $item['numLicitacoes'] }}</td><td>{{ $inicio?->format('d/m/Y H:i') ?? '—' }}</td><td>{{ \Carbon\Carbon::parse($item['terminaEm'])->setTimezone('Europe/Lisbon')->format('d/m/Y H:i') }}</td>
+</tr>
+@endforeach
 </tbody></table></div></details>
 </section>
 @endsection
 
 @push('scripts')
 <script>
+document.querySelectorAll('[data-listagem]').forEach((listagem) => {
+    const campos = [...listagem.querySelectorAll('[data-filtro]')];
+    const linhas = [...listagem.querySelectorAll('tbody tr')];
+    const limpar = listagem.querySelector('[data-limpar]');
+    const semResultados = listagem.querySelector('[data-sem-resultados]');
+    const limite = Number(listagem.dataset.listagem);
+    const normalizar = (valor) => valor.trim().normalize('NFD').replace(/\p{M}/gu, '').toLowerCase();
+
+    function atualizarLista() {
+        const ativos = campos.map((campo) => ({
+            chave: campo.dataset.filtro,
+            valor: normalizar(campo.value),
+            pesquisa: campo.type === 'search'
+        })).filter(({ valor }) => valor);
+
+        let visiveis = 0;
+        linhas.forEach((linha, indice) => {
+            const corresponde = ativos.length ? ativos.every(({ chave, valor, pesquisa }) => {
+                const conteudo = normalizar(linha.dataset[chave] ?? '');
+                return pesquisa ? conteudo.includes(valor) : conteudo === valor;
+            }) : indice < limite;
+            linha.hidden = !corresponde;
+            if (corresponde) visiveis++;
+        });
+
+        limpar.disabled = !campos.some((campo) => campo.value);
+        semResultados.hidden = visiveis > 0;
+    }
+
+    campos.forEach((campo) => campo.addEventListener('input', atualizarLista));
+    limpar.addEventListener('click', () => {
+        campos.forEach((campo) => { campo.value = ''; });
+        atualizarLista();
+    });
+    atualizarLista();
+});
+
 (() => {
     const painel = document.querySelector('.painel-tempo-real');
     if (!painel) return;

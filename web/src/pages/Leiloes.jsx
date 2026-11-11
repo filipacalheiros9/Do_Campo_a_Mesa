@@ -42,11 +42,16 @@ export default function Leiloes() {
 
   return (
     <>
-      <header className="destaque mb-4">
-        <h1>Leilões</h1>
-        <p className="texto-secundario mb-0">
-          Assista aos leilões em direto e licite nos lotes dos produtores locais.
-        </p>
+      <header className="destaque d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
+        <div>
+          <h1>Leilões</h1>
+          <p className="texto-secundario mb-0">
+            Assista aos leilões em direto e licite nos lotes dos produtores locais.
+          </p>
+        </div>
+        {utilizador?.papel === 'produtor' && (
+          <Link to="/produtor/leiloes/novo" className="btn btn-success">Criar leilão</Link>
+        )}
       </header>
 
       {erro && <div className="alert alert-danger" role="alert">{erro}</div>}

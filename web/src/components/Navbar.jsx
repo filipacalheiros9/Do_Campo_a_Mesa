@@ -50,14 +50,12 @@ export default function Navbar() {
   ];
 
   if (utilizador?.papel === 'comprador') {
-    abas.shift();
     abas.push(
       { to: '/carrinho', icone: 'carrinho', texto: 'Carrinho', contador: totalArtigos },
       { to: '/encomendas', icone: 'encomendas', texto: 'Encomendas' },
       { to: '/perfil', icone: 'perfil', texto: 'Perfil' }
     );
   } else if (utilizador?.papel === 'produtor') {
-    abas[0].texto = 'Produtos';
     abas.push(
       { to: '/produtor', fim: true, icone: 'painel', texto: 'Painel' },
       { to: '/produtor/produtos', icone: 'produtos', texto: 'Catálogo' },
@@ -87,7 +85,7 @@ export default function Navbar() {
           <span>Do Campo à Mesa</span>
         </Link>
         {utilizador && (
-          <button type="button" className="btn btn-sm btn-outline-secondary d-lg-none ms-auto" onClick={sair}>Sair</button>
+          <button type="button" className="btn btn-sm btn-danger d-lg-none ms-auto" onClick={sair}>Sair</button>
         )}
         <div className="menu-principal d-none d-lg-flex navbar-collapse" id="menu">
           <ul className="navbar-nav me-auto">
@@ -165,7 +163,7 @@ export default function Navbar() {
                   )}
                   <li><NavLink className="dropdown-item" to="/notificacoes">Notificações</NavLink></li>
                   <li><hr className="dropdown-divider" /></li>
-                  <li><button type="button" className="dropdown-item" onClick={sair}>Sair</button></li>
+                  <li className="px-2"><button type="button" className="btn btn-sm btn-danger w-100" onClick={sair}>Sair</button></li>
                 </ul>
               </div>
             ) : (

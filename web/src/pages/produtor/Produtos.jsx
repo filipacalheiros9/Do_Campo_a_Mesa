@@ -86,10 +86,7 @@ export default function ProdutosProdutor() {
   return (
     <>
       <header className="destaque mb-4">
-        <div>
-          <p className="texto-secundario mb-1">Área do produtor</p>
-          <h1 className="mb-0">Os meus produtos</h1>
-        </div>
+        <h1 className="mb-0">Os meus produtos</h1>
       </header>
 
       <form className="card card-body mb-4" onSubmit={guardar}>

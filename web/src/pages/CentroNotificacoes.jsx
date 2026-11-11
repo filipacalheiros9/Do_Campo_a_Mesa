@@ -17,7 +17,7 @@ export default function CentroNotificacoes() {
           <p className="texto-secundario mb-0">Atualizações da sua conta, encomendas e leilões.</p>
         </div>
         {notificacoes.length > 0 && (
-          <button type="button" className="btn btn-sm btn-outline-secondary" onClick={limpar}>Limpar</button>
+          <button type="button" className="btn btn-sm btn-danger" onClick={limpar}>Limpar</button>
         )}
       </header>
 
